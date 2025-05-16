@@ -15,7 +15,21 @@ const Colors = {
   }
 };
 
-export default function TabLayout() {
+// Tell Expo Router to skip the "screens" directory
+export const unstable_settings = {
+  // Ensure only specific routes are included in the tab navigation
+  initialRouteName: 'index',  
+  excludeRoute: (route: string) => {
+    // Hide all routes that start with underscore
+    if (route.startsWith('_')) return true;
+    
+    // Only include the specific tabs we want
+    const allowedRoutes = ['index', 'orders/index', 'screens', 'stores/index', 'settings/index'];
+    return !allowedRoutes.includes(route);
+  }
+};
+
+export default function RootLayout() {
   return (
     <Tabs
       screenOptions={{
@@ -36,6 +50,7 @@ export default function TabLayout() {
           paddingTop: 8,
           height: 65,
           position: 'absolute',
+          justifyContent: 'center',
         },
         tabBarItemStyle: {
           padding: 5,
@@ -47,6 +62,15 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
+      {/* Hide _components from tab navigation */}
+      <Tabs.Screen
+        name="_components"
+        options={{
+          tabBarItemStyle: { display: 'none', width: 0, height: 0 },
+          tabBarButton: () => null,
+        }}
+      />
+      
       <Tabs.Screen
         name="index"
         options={{
@@ -60,6 +84,7 @@ export default function TabLayout() {
         name="orders/index"
         options={{
           title: 'Orders',
+          headerTitle: 'My Orders',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome5 name="clipboard-list" size={size} color={color} />
           ),
@@ -69,6 +94,7 @@ export default function TabLayout() {
         name="screens"
         options={{
           title: 'Offers',
+          headerTitle: 'Special Offers',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome5 name="percentage" size={size} color={color} />
           ),
@@ -78,6 +104,7 @@ export default function TabLayout() {
         name="stores/index"
         options={{
           title: 'Stores',
+          headerTitle: 'Garden Shops',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome5 name="store" size={size} color={color} />
           ),
@@ -87,6 +114,7 @@ export default function TabLayout() {
         name="settings/index"
         options={{
           title: 'Settings',
+          headerTitle: 'Account Settings',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome5 name="cog" size={size} color={color} />
           ),
