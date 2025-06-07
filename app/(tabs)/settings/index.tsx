@@ -1,7 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   Dimensions,
+  Image,
   StatusBar,
   StyleSheet,
   Text,
@@ -14,8 +16,9 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 const { width, height } = Dimensions.get('window');
 
 interface MenuListItemProps {
-  iconName: string;
+  iconName?: string;
   iconFamily?: 'FontAwesome' | 'FontAwesome5';
+  iconImage?: any;
   title: string;
   rightIconName?: string;
   rightIconFamily?: 'FontAwesome' | 'FontAwesome5';
@@ -30,14 +33,23 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
   rightIconName,
   rightIconFamily = 'FontAwesome',
   hasRightIcon = true,
-  onPress
+  onPress,
+  iconImage
 }) => {
   const IconComponent = iconFamily === 'FontAwesome5' ? FontAwesome5 : FontAwesome;
   const RightIconComponent = rightIconFamily === 'FontAwesome5' ? FontAwesome5 : FontAwesome;
 
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-      <IconComponent name={iconName} size={24} color="#222" style={styles.menuIcon} />
+      {iconImage ? (
+        <Image
+          source={iconImage}
+          style={{ width: 24, height: 24, marginLeft: 15 }}
+          resizeMode="contain"
+        />
+      ) : (
+        <IconComponent name={iconName!} size={24} color="#222" style={styles.menuIcon} />
+      )}
       <Text style={styles.menuTitleWithIcon}>{title}</Text>
       {hasRightIcon && rightIconName && (
         <RightIconComponent name={rightIconName} size={16} color="#222" style={styles.menuChevron} />
@@ -53,8 +65,31 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
 };
 
 const User19: React.FC = () => {
+  const router = useRouter();
+
   const handleMenuPress = (menuName: string) => {
-    console.log(`Menu pressed: ${menuName}`);
+    switch (menuName) {
+      case 'wallet':
+        router.push('/settings/wallet');
+        break;
+      case 'notifications':
+        router.push('/settings/notifications');
+        break;
+      case 'complaints':
+        router.push('/settings/complaints');
+        break;
+      case 'settings':
+        router.push('/settings/settings');
+        break;
+      case 'about':
+        router.push('/(tabs)/settings/about');
+        router.push('/settings/about');
+        break;
+      case 'logout':
+        // Handle logout logic here
+        console.log('Logout pressed');
+        break;
+    }
   };
 
   return (
@@ -70,6 +105,13 @@ const User19: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
+        <Text style={styles.headerTitle}>الإعدادات</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       {/* Menu List */}
@@ -106,17 +148,16 @@ const User19: React.FC = () => {
         />
 
         <MenuListItem
-          iconName="info-circle"
-          iconFamily="FontAwesome"
+          iconImage={require('../../../assets/images/icon.jpg')}
           title="عن مشتل"
           rightIconFamily="FontAwesome"
-          onPress={() => handleMenuPress('about')}
+          onPress={() => router.push('/(tabs)/settings/about')}
         />
 
         <MenuListItem
           iconName="sign-out"
           iconFamily="FontAwesome"
-          title="تسجيل الخروج"
+          title="تسجيل الدخول"
           onPress={() => handleMenuPress('logout')}
         />
       </View>
@@ -132,6 +173,9 @@ const styles = StyleSheet.create({
 
   // Green Header Navigation Bar Styles
   navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
@@ -142,6 +186,18 @@ const styles = StyleSheet.create({
   headerFade: {
     ...StyleSheet.absoluteFillObject,
     zIndex: -1,
+  },
+
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    flex: 1,
+  },
+
+  backButton: {
+    padding: 8,
   },
 
   statusBarContainer: {

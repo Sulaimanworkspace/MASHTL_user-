@@ -1,4 +1,6 @@
+import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   Dimensions,
@@ -9,22 +11,11 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 
-interface User17Props {
-  onBackPress?: () => void;
-}
-
-const User17: React.FC<User17Props> = ({ onBackPress }) => {
-  const handleBackPress = () => {
-    if (onBackPress) {
-      onBackPress();
-    } else {
-      console.log('Back button pressed');
-    }
-  };
+const User17: React.FC = () => {
+  const router = useRouter();
 
   return (
     <View style={styles.container}>
@@ -43,12 +34,10 @@ const User17: React.FC<User17Props> = ({ onBackPress }) => {
         <View style={styles.navContent}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={handleBackPress}
+            onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Svg width={24} height={24} viewBox="0 0 24 24">
-              <Path d="M6 12h12M12 6l6 6-6 6" stroke="#F4F4F4" strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
+            <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>

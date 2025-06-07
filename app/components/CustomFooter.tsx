@@ -1,29 +1,23 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const Colors = {
-  primary: '#2E8B57',
-  secondary: '#666666',
-  background: '#FFFFFF',
-  lightGray: '#E0E0E0',
-  white: '#FFFFFF',
-  text: {
-    primary: '#333333',
-    secondary: '#666666'
-  }
-};
+import Colors from '../_colors';
 
 export default function CustomFooter() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isActive = (path: string) => {
-    return pathname === path;
+  const navigateTo = (route: string) => {
+    router.push(route);
   };
 
-  const navigateTo = (path: string) => {
-    router.push(path);
+  const isActive = (route: string) => {
+    // Special handling for Home
+    if (route === '/(tabs)/Home') {
+      return pathname === '/' || pathname === '/(tabs)/Home' || pathname === '/(tabs)/Home/index';
+    }
+    // For other tabs
+    return pathname === route || pathname === `${route}/index`;
   };
 
   return (
@@ -36,6 +30,7 @@ export default function CustomFooter() {
           name="home"
           size={24}
           color={isActive('/(tabs)/Home') ? Colors.primary : Colors.secondary}
+          solid={isActive('/(tabs)/Home')}
         />
         <Text
           style={[
@@ -55,6 +50,7 @@ export default function CustomFooter() {
           name="clipboard-list"
           size={24}
           color={isActive('/(tabs)/orders') ? Colors.primary : Colors.secondary}
+          solid={isActive('/(tabs)/orders')}
         />
         <Text
           style={[
@@ -62,7 +58,7 @@ export default function CustomFooter() {
             { color: isActive('/(tabs)/orders') ? Colors.primary : Colors.secondary },
           ]}
         >
-          طلباتي
+          الطلبات
         </Text>
       </TouchableOpacity>
 
@@ -74,6 +70,7 @@ export default function CustomFooter() {
           name="comments"
           size={24}
           color={isActive('/(tabs)/chats') ? Colors.primary : Colors.secondary}
+          solid={isActive('/(tabs)/chats')}
         />
         <Text
           style={[
@@ -93,6 +90,7 @@ export default function CustomFooter() {
           name="cog"
           size={24}
           color={isActive('/(tabs)/settings') ? Colors.primary : Colors.secondary}
+          solid={isActive('/(tabs)/settings')}
         />
         <Text
           style={[
@@ -100,7 +98,7 @@ export default function CustomFooter() {
             { color: isActive('/(tabs)/settings') ? Colors.primary : Colors.secondary },
           ]}
         >
-          حسابي
+          الإعدادات
         </Text>
       </TouchableOpacity>
     </View>

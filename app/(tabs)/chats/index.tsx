@@ -1,35 +1,15 @@
+import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-interface ChatPreview {
-  id: string;
-  name: string;
-  lastMessage: string;
-  time: string;
-  avatar?: string;
-}
-
-const chatList: ChatPreview[] = [
-  {
-    id: '1',
-    name: 'أحمد محمد',
-    lastMessage: 'شكرًا لك! سأتابع معك قريبًا.',
-    time: '10:30 ص',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-  },
-  {
-    id: '2',
-    name: 'سارة علي',
-    lastMessage: 'تم استلام الطلب بنجاح.',
-    time: '09:15 ص',
-    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-  },
-];
+import { chatList, ChatPreview } from './chatData';
 
 const ChatInboxScreen: React.FC = () => {
+  const router = useRouter();
+
   const renderItem = ({ item }: { item: ChatPreview }) => (
-    <TouchableOpacity style={styles.chatItem}>
+    <TouchableOpacity style={styles.chatItem} onPress={() => router.push(`/chats/message?id=${item.id}`)}>
       <Image
         source={item.avatar ? { uri: item.avatar } : { uri: 'https://ui-avatars.com/api/?name=User' }}
         style={styles.avatar}
@@ -56,8 +36,18 @@ const ChatInboxScreen: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>المحادثات</Text> 
+        <View style={styles.navContent}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>المحادثات</Text>
+          </View>
         </View>
       </View>
       {/* Chat List */}
@@ -87,6 +77,18 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: -1,
   },
+  navContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    right: 0,
+    padding: 8,
+    zIndex: 1,
+  },
   titleContainer: {
     flex: 1,
     alignItems: 'center',
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   chatItem: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
@@ -114,31 +116,39 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: '#e0e0e0',
-    marginRight: 14,
+    marginLeft: 14,
+    marginRight: 0,
   },
   chatInfo: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   chatHeader: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 2,
+    width: '100%',
   },
   name: {
     fontSize: 16,
     fontWeight: '600',
     color: '#222',
+    textAlign: 'right',
+    flex: 1,
   },
   time: {
     fontSize: 12,
     color: '#888',
-    marginLeft: 8,
+    marginRight: 8,
+    textAlign: 'left',
   },
   lastMessage: {
     fontSize: 14,
     color: '#666',
+    textAlign: 'right',
+    width: '100%',
   },
 });
 

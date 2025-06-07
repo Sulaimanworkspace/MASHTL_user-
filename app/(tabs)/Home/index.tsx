@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   Dimensions,
@@ -10,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 
 const { width, height } = Dimensions.get('window');
@@ -46,13 +48,84 @@ const TabItem: React.FC<TabItemProps> = ({ imageUri, title, isActive = false, on
   </TouchableOpacity>
 );
 
+type ServiceType = 'landscaping' | 'tree-planting' | 'projects' | 'grass-planting';
+
+interface ServiceData {
+  id: string;
+  name: string;
+  image: string;
+  description: string;
+}
+
 const User4: React.FC = () => {
-  const handleServicePress = (serviceName: string) => {
-    console.log(`Service pressed: ${serviceName}`);
+  const router = useRouter();
+
+  const bannerImages = [
+    "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/93029b0fe0d878c1b88db46f2f108f549ea83b58?placeholderIfAbsent=true",
+    "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/93029b0fe0d878c1b88db46f2f108f549ea83b58?placeholderIfAbsent=true&theme=dark",
+    "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/93029b0fe0d878c1b88db46f2f108f549ea83b58?placeholderIfAbsent=true&theme=light"
+  ];
+
+  const handleServicePress = (serviceType: ServiceType) => {
+    const serviceData: Record<ServiceType, ServiceData> = {
+      'landscaping': {
+        id: '1',
+        name: 'تنسيق الحدائق',
+        image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/9db5513cffa0f952bf72289940508e6bb2f43e86?placeholderIfAbsent=true',
+        description: 'خدمة تنسيق الحدائق المنزلية والشركات بأحدث التصاميم والأساليب الحديثة. نقوم بتصميم وتنفيذ جميع أنواع الحدائق مع ضمان جودة العمل والمواد المستخدمة.'
+      },
+      'tree-planting': {
+        id: '2',
+        name: 'زراعة الأشجار',
+        image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/4f68288a8dfbd3be84b86a86f69f10b478b30bb2?placeholderIfAbsent=true',
+        description: 'خدمة زراعة الأشجار بأنواعها المختلفة مع توفير الرعاية اللازمة. نقوم باختيار أفضل أنواع الأشجار المناسبة للمناخ والتربة مع ضمان نجاح الزراعة.'
+      },
+      'projects': {
+        id: '3',
+        name: 'المشاريع',
+        image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true',
+        description: 'تنفيذ المشاريع الزراعية الكبيرة والصغيرة مع فريق متخصص. نقدم حلول متكاملة للمشاريع الزراعية مع ضمان الجودة والالتزام بالمواعيد.'
+      },
+      'grass-planting': {
+        id: '4',
+        name: 'زراعة ثيل',
+        image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/46f551cf45a05c4bbd3169c8c33a7c6b72ea9cb1?placeholderIfAbsent=true',
+        description: 'خدمة زراعة الثيل الطبيعي والصناعي مع ضمان جودة العشب. نقوم بتجهيز الأرض وزراعة الثيل مع توفير خدمات الصيانة الدورية.'
+      }
+    };
+
+    const service = serviceData[serviceType];
+    if (service) {
+      if (serviceType === 'projects') {
+        router.push({
+          pathname: '/(tabs)/Home/project',
+          params: {
+            id: service.id,
+            name: service.name,
+            image: service.image,
+            description: service.description
+          }
+        });
+      } else {
+        router.push({
+          pathname: '/(tabs)/Home/service-details',
+          params: {
+            id: service.id,
+            name: service.name,
+            image: service.image,
+            description: service.description
+          }
+        });
+      }
+    }
   };
 
   const handleTabPress = (tabName: string) => {
     console.log(`Tab pressed: ${tabName}`);
+  };
+
+  const handleNotificationPress = () => {
+    router.replace('/(tabs)/Home/notifications');
   };
 
   return (
@@ -68,7 +141,7 @@ const User4: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        <View style={styles.notificationCircle}>
+        <TouchableOpacity style={styles.notificationCircle} onPress={handleNotificationPress}>
           <Image
             source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1827/1827392.png' }}
             style={styles.notificationIconWhite}
@@ -76,9 +149,12 @@ const User4: React.FC = () => {
           <View style={styles.notificationBadge}>
             <Text style={styles.notificationBadgeText}>1</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         <View style={styles.nameAndNotification}>
-          <TouchableOpacity style={styles.notificationButton}>
+          <TouchableOpacity 
+            style={styles.notificationButton}
+            onPress={handleNotificationPress}
+          >
             <Image
               source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/5610980971e7eae9538d65e51902f648fe9062c8?placeholderIfAbsent=true" }}
               style={styles.notificationIcon}
@@ -104,13 +180,7 @@ const User4: React.FC = () => {
       <View style={styles.contentContainer}>
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Banner Section */}
-          <View style={styles.bannerContainer}>
-            <Image
-              source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/93029b0fe0d878c1b88db46f2f108f549ea83b58?placeholderIfAbsent=true" }}
-              style={styles.bannerImage}
-              resizeMode="contain"
-            />
-          </View>
+          <Banner images={bannerImages} />
 
           {/* Services Section */}
           <View style={styles.servicesContainer}>
@@ -279,22 +349,6 @@ const styles = StyleSheet.create({
     height: 16,
     marginRight: 4,
     tintColor: '#4CAF50',
-  },
-
-  // Banner Styles
-  bannerContainer: {
-    width: '100%',
-    height: 200,
-    marginBottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  bannerImage: {
-    width: '92%',
-    height: '100%',
-    borderRadius: 18,
-    backgroundColor: '#fff',
   },
 
   // Services Section Styles
