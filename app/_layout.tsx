@@ -18,13 +18,17 @@ const Colors = {
 // Tell Expo Router to skip the "screens" directory
 export const unstable_settings = {
   // Ensure only specific routes are included in the tab navigation
-  initialRouteName: 'index',  
+  initialRouteName: 'Home/index',  
   excludeRoute: (route: string) => {
     // Hide all routes that start with underscore
     if (route.startsWith('_')) return true;
     
+
+    // Hide the root index.tsx
+    if (route === 'index') return true;
+    
     // Only include the specific tabs we want
-    const allowedRoutes = ['index', 'orders/index', 'screens', 'stores/index', 'settings/index'];
+    const allowedRoutes = ['index', 'orders/index', 'chats/index', 'settings/index'];
     return !allowedRoutes.includes(route);
   }
 };
@@ -62,20 +66,11 @@ export default function RootLayout() {
         headerShown: false,
       }}
     >
-      {/* Hide _components from tab navigation */}
       <Tabs.Screen
-        name="_components"
+        name="Home/index"
         options={{
-          tabBarItemStyle: { display: 'none', width: 0, height: 0 },
-          tabBarButton: () => null,
-        }}
-      />
-      
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => (
+          title: 'الرئيسية',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <FontAwesome5 name="home" size={size} color={color} />
           ),
         }}
@@ -83,39 +78,29 @@ export default function RootLayout() {
       <Tabs.Screen
         name="orders/index"
         options={{
-          title: 'Orders',
-          headerTitle: 'My Orders',
-          tabBarIcon: ({ color, size }) => (
+          title: 'طلباتي',
+          headerTitle: 'My Orderss',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <FontAwesome5 name="clipboard-list" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="screens"
+        name="chats/index"
         options={{
-          title: 'Offers',
-          headerTitle: 'Special Offers',
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="percentage" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="stores/index"
-        options={{
-          title: 'Stores',
-          headerTitle: 'Garden Shops',
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="store" size={size} color={color} />
+          title: 'المحادثات',
+          headerTitle: 'Chats',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <FontAwesome5 name="comments" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="settings/index"
         options={{
-          title: 'Settings',
+          title: 'حسابي',
           headerTitle: 'Account Settings',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <FontAwesome5 name="cog" size={size} color={color} />
           ),
         }}
