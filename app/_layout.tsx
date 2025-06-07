@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 
 // Define colors locally since the colors file was deleted
