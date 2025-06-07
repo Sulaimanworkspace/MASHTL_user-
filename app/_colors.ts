@@ -1,5 +1,5 @@
 // App colors
-export const Colors = {
+const Colors = {
   primary: '#2E8B57',
   primaryLight: '#3CB371',
   primaryDark: '#006400',
@@ -14,4 +14,6 @@ export const Colors = {
     secondary: '#666666',
     light: '#999999',
   }
-}; 
+};
+
+export default Colors; 

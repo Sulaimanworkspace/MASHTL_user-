@@ -1,15 +1,16 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import CustomFooter from '../../components/CustomFooter';
 
 const { width, height } = Dimensions.get('window');
 
@@ -100,55 +101,58 @@ const User4: React.FC = () => {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Banner Section */}
-        <View style={styles.bannerContainer}>
-          <Image
-            source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/93029b0fe0d878c1b88db46f2f108f549ea83b58?placeholderIfAbsent=true" }}
-            style={styles.bannerImage}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Services Section */}
-        <View style={styles.servicesContainer}>
-          <View style={styles.servicesHeader}>
-            <Text style={styles.servicesTitle}>الخدمات الزراعية</Text>
+      <View style={styles.contentContainer}>
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {/* Banner Section */}
+          <View style={styles.bannerContainer}>
+            <Image
+              source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/93029b0fe0d878c1b88db46f2f108f549ea83b58?placeholderIfAbsent=true" }}
+              style={styles.bannerImage}
+              resizeMode="contain"
+            />
           </View>
 
-          <View style={styles.servicesContent}>
-            <View style={styles.servicesGrid}>
-              <View style={styles.servicesRow}>
-                <ServiceItem
-                  imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/9db5513cffa0f952bf72289940508e6bb2f43e86?placeholderIfAbsent=true"
-                  title="تنسيق الحدائق"
-                  onPress={() => handleServicePress('landscaping')}
-                  style={{ marginRight: 2 }}
-                />
-                <ServiceItem
-                  imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/4f68288a8dfbd3be84b86a86f69f10b478b30bb2?placeholderIfAbsent=true"
-                  title="زراعة الأشجار"
-                  onPress={() => handleServicePress('tree-planting')}
-                />
-              </View>
+          {/* Services Section */}
+          <View style={styles.servicesContainer}>
+            <View style={styles.servicesHeader}>
+              <Text style={styles.servicesTitle}>الخدمات الزراعية</Text>
+            </View>
 
-              <View style={styles.servicesRow}>
-                <ServiceItem
-                  imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true"
-                  title="المشاريع"
-                  onPress={() => handleServicePress('projects')}
-                  style={{ marginRight: 2 }}
-                />
-                <ServiceItem
-                  imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/46f551cf45a05c4bbd3169c8c33a7c6b72ea9cb1?placeholderIfAbsent=true"
-                  title="زراعة ثيل"
-                  onPress={() => handleServicePress('grass-planting')}
-                />
+            <View style={styles.servicesContent}>
+              <View style={styles.servicesGrid}>
+                <View style={styles.servicesRow}>
+                  <ServiceItem
+                    imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/9db5513cffa0f952bf72289940508e6bb2f43e86?placeholderIfAbsent=true"
+                    title="تنسيق الحدائق"
+                    onPress={() => handleServicePress('landscaping')}
+                    style={{ marginRight: 2 }}
+                  />
+                  <ServiceItem
+                    imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/4f68288a8dfbd3be84b86a86f69f10b478b30bb2?placeholderIfAbsent=true"
+                    title="زراعة الأشجار"
+                    onPress={() => handleServicePress('tree-planting')}
+                  />
+                </View>
+
+                <View style={styles.servicesRow}>
+                  <ServiceItem
+                    imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true"
+                    title="المشاريع"
+                    onPress={() => handleServicePress('projects')}
+                    style={{ marginRight: 2 }}
+                  />
+                  <ServiceItem
+                    imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/46f551cf45a05c4bbd3169c8c33a7c6b72ea9cb1?placeholderIfAbsent=true"
+                    title="زراعة ثيل"
+                    onPress={() => handleServicePress('grass-planting')}
+                  />
+                </View>
               </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+        <CustomFooter />
+      </View>
     </View>
   );
 };
@@ -157,6 +161,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  contentContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  scrollContainer: {
+    flex: 1,
+    paddingBottom: 80, // Add padding to prevent content from being hidden behind footer
   },
 
   // Green Header Navigation Bar Styles
@@ -269,11 +281,6 @@ const styles = StyleSheet.create({
     tintColor: '#4CAF50',
   },
 
-  // Scroll Container
-  scrollContainer: {
-    flex: 1,
-  },
-
   // Banner Styles
   bannerContainer: {
     width: '100%',
@@ -369,7 +376,7 @@ const styles = StyleSheet.create({
   // Footer Navigation Styles
   footer: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderTopWidth: 1,
