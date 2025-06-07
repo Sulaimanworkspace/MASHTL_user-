@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { chatList, ChatPreview } from './chatData';
+import { chatList, ChatPreview } from '../../data/chatData';
 
 const ChatInboxScreen: React.FC = () => {
   const router = useRouter();

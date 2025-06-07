@@ -118,7 +118,7 @@ const User19: React.FC = () => {
       <View style={styles.listContainer}>
         <MenuListItem
           iconName="wallet"
-          iconFamily="FontAwesome"
+          iconFamily="FontAwesome5"
           title="المحفظة"
           onPress={() => handleMenuPress('wallet')}
         />
