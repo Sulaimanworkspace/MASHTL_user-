@@ -2,11 +2,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
@@ -38,6 +38,7 @@ const Complaints: React.FC = () => {
       {/* Complaints Content */}
       <View style={styles.content}>
         {/* Add your complaints content here */}
+        <Text>الشكاوي</Text>
       </View>
     </View>
   );

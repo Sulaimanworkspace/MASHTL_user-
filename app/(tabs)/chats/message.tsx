@@ -75,15 +75,38 @@ const MessageScreen: React.FC = () => {
         />
         {/* Input */}
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="اكتب رسالة..."
-            textAlign="right"
+          <LinearGradient
+            colors={["#4CAF50", "#102811"]}
+            style={styles.inputFade}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            pointerEvents="none"
           />
+          <View style={styles.inputWrapper}>
+            <TouchableOpacity style={styles.minusButton}>
+              <FontAwesome5 name="minus-circle" size={20} color="#FF0000" />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              value={input}
+              onChangeText={setInput}
+              placeholder="اكتب رسالتك هنا..."
+              placeholderTextColor="#000000"
+              textAlign="right"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={styles.inputIcons}>
+              <TouchableOpacity style={styles.iconButton}>
+                <FontAwesome5 name="paperclip" size={20} color="#000000" style={{ transform: [{ rotate: '-45deg' }] }} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton}>
+                <FontAwesome5 name="camera" size={20} color="#000000" />
+              </TouchableOpacity>
+            </View>
+          </View>
           <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-            <FontAwesome5 name="paper-plane" size={20} color="#fff" />
+            <FontAwesome5 name="paper-plane" size={20} color="#fff" solid />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -182,25 +205,48 @@ const styles = StyleSheet.create({
     marginRight: 0,
   },
   inputContainer: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingTop: 20,
+    paddingBottom: 20,
+    marginTop: -10,
     borderTopWidth: 1,
     borderColor: '#eee',
     backgroundColor: '#fff',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  inputFade: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: -1,
+  },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fafafa',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginRight: 8,
   },
   input: {
     flex: 1,
     height: 40,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 20,
     paddingHorizontal: 16,
     fontSize: 16,
-    backgroundColor: '#fafafa',
-    marginLeft: 8,
     textAlign: 'right',
+    backgroundColor: 'transparent',
+  },
+  inputIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 8,
+  },
+  iconButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   sendButton: {
     backgroundColor: '#4CAF50',
@@ -208,6 +254,11 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 8,
+  },
+  minusButton: {
+    padding: 8,
+    marginLeft: 8,
   },
 });
 

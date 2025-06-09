@@ -38,6 +38,7 @@ const Wallet: React.FC = () => {
       {/* Wallet Content */}
       <View style={styles.content}>
         {/* Add your wallet content here */}
+        <Text>المحفظة</Text>
       </View>
     </View>
   );

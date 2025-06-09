@@ -158,7 +158,7 @@ const User19: React.FC = () => {
           iconName="sign-out"
           iconFamily="FontAwesome"
           title="تسجيل الدخول"
-          onPress={() => handleMenuPress('logout')}
+          onPress={() => router.replace('/(tabs)/auth/login')}
         />
       </View>
     </View>

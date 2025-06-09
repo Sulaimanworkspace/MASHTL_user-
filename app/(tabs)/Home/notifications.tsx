@@ -18,13 +18,14 @@ export default function NotificationsScreen() {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        <Text style={styles.headerTitle}>الإشعارات</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.navContent}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>الإشعارات</Text>
+          </View>
+        </View>
       </View>
 
       {/* Notifications List */}
@@ -51,12 +52,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 30,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -64,15 +62,29 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: -1,
   },
+  navContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
   backButton: {
+    position: 'absolute',
+    right: 0,
     padding: 8,
+    zIndex: 1,
+    top: 0,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    flex: 1,
   },
   notificationsList: {
     flex: 1,

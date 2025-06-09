@@ -19,13 +19,14 @@ export default function ProjectScreen() {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        <Text style={styles.headerTitle}>المشاريع الزراعية</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.navContent}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>المشاريع الزراعية</Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -94,8 +95,24 @@ export default function ProjectScreen() {
           </View>
 
           {/* Contact Button */}
-          <TouchableOpacity style={styles.contactButton}>
-            <Text style={styles.contactButtonText}>تواصل معنا</Text>
+          <TouchableOpacity style={styles.gradientButtonWrapper}
+            onPress={() => router.push({
+              pathname: '/(tabs)/Home/project-form',
+              params: {
+                name: name,
+                image: image,
+                description: description,
+              }
+            })}
+          >
+            <LinearGradient
+              colors={["#4CAF50", "#179a3a"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gradientButton}
+            >
+              <Text style={styles.gradientButtonText}>تواصل معنا</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -109,12 +126,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 30,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -122,15 +136,29 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: -1,
   },
+  navContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
   backButton: {
+    position: 'absolute',
+    right: 0,
     padding: 8,
+    zIndex: 1,
+    top: 0,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    flex: 1,
   },
   content: {
     flex: 1,
@@ -208,15 +236,23 @@ const styles = StyleSheet.create({
     color: '#666666',
     marginRight: 8,
   },
-  contactButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
+  gradientButtonWrapper: {
+    width: '90%',
+    alignSelf: 'center',
+    marginTop: 24,
+    marginBottom: 24,
   },
-  contactButtonText: {
-    color: '#FFFFFF',
+  gradientButton: {
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    elevation: 2,
+  },
+  gradientButtonText: {
+    color: '#fff',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
 }); 

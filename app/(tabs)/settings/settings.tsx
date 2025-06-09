@@ -2,13 +2,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 const Settings: React.FC = () => {
   const router = useRouter();
@@ -31,13 +30,15 @@ const Settings: React.FC = () => {
           style={styles.backButton}
           onPress={() => router.push('/(tabs)/settings')}
         >
-          <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
+          {/* <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" /> */}
         </TouchableOpacity>
       </View>
 
       {/* Settings Content */}
       <View style={styles.content}>
-        {/* Add your settings content here */}
+        <TouchableOpacity style={{backgroundColor: '#4CAF50', borderRadius: 8, padding: 16, alignItems: 'center'}} onPress={() => router.push('../../auth/login')}>
+          <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 18}}>اذهب إلى تسجيل الدخول</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
