@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 8,
     zIndex: 1,
-    top: 0,
+    top: -8,
   },
   content: {
     flex: 1,

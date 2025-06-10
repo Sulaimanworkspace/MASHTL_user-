@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -14,51 +14,53 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.outerContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor="#222" />
-      <View style={styles.container}>
-        <Image source={require('../../../assets/images/icon.jpg')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>تسجيل الدخول</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="الاسم"
-          value={name}
-          onChangeText={setName}
-          placeholderTextColor="#BDBDBD"
-          textAlign="right"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="رقم الهاتف"
-          value={phone}
-          onChangeText={setPhone}
-          placeholderTextColor="#BDBDBD"
-          keyboardType="phone-pad"
-          textAlign="right"
-        />
-        <View style={styles.passwordRow}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={styles.outerContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#222" />
+        <View style={styles.container}>
+          <Image source={require('../../../assets/images/icon.jpg')} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.title}>تسجيل الدخول</Text>
           <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0 }]}
-            placeholder="كلمة المرور"
-            value={password}
-            onChangeText={setPassword}
+            style={styles.input}
+            placeholder="الاسم"
+            value={name}
+            onChangeText={setName}
             placeholderTextColor="#BDBDBD"
-            secureTextEntry
             textAlign="right"
           />
-          <Text style={styles.passwordIcon}>🗝️</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="رقم الهاتف"
+            value={phone}
+            onChangeText={setPhone}
+            placeholderTextColor="#BDBDBD"
+            keyboardType="phone-pad"
+            textAlign="right"
+          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, { flex: 1, marginBottom: 0 }]}
+              placeholder="كلمة المرور"
+              value={password}
+              onChangeText={setPassword}
+              placeholderTextColor="#BDBDBD"
+              secureTextEntry
+              textAlign="right"
+            />
+            <Text style={styles.passwordIcon}>🗝️</Text>
+          </View>
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>تسجيل الدخول</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, styles.signupButton]} onPress={() => router.push('./signup')}>
+            <Text style={styles.buttonText}>إنشاء حساب جديد</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, styles.signupButton]} onPress={() => router.push('/(tabs)/Home')}>
+            <Text style={styles.buttonText}>متابعة من دون تسحيل الدخول</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>تسجيل الدخول</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.signupButton]} onPress={() => router.push('./signup')}>
-          <Text style={styles.buttonText}>إنشاء حساب جديد</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.signupButton]} onPress={() => router.push('/(tabs)/Home')}>
-          <Text style={styles.buttonText}>متابعة من دون تسحيل الدخول</Text>
-        </TouchableOpacity>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 

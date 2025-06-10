@@ -97,7 +97,7 @@ export default function ProjectScreen() {
           {/* Contact Button */}
           <TouchableOpacity style={styles.gradientButtonWrapper}
             onPress={() => router.push({
-              pathname: '/(tabs)/project-form',
+              pathname: '/(tabs)/Home/project-form',
               params: {
                 name: name,
                 image: image,
