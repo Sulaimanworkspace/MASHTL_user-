@@ -26,22 +26,16 @@ const Wallet: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        {/* Wallet info row in header, top right */}
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/settings')}>
+          <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>محفظتي</Text>
         <View style={styles.walletInfoHeaderRow}>
           <MaterialIcons name="account-balance-wallet" size={16} color="#fff" style={{ marginLeft: 2 }} />
           <Text style={styles.walletInfoHeaderLabel}>محفظتي</Text>
           <Text style={styles.walletInfoHeaderCurrency}>ريال</Text>
           <Text style={styles.walletInfoHeaderAmount}>0.00</Text>
         </View>
-        {/* Centered header title */}
-        <Text style={styles.headerTitle}>محفظتي</Text>
-        {/* Back button */}
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.push('/(tabs)/settings')}
-        >
-          <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
       </View>
 
       {/* Wallet Info Row */}
@@ -75,11 +69,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   navBar: {
-    position: 'relative',
-    height: 110,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    position: 'relative',
+    overflow: 'hidden',
   },
   headerFade: {
     ...StyleSheet.absoluteFillObject,
@@ -90,19 +87,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 50,
-    zIndex: 1,
+    flex: 1,
   },
   walletInfoHeaderRow: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    zIndex: 2,
   },
   backButton: {
     position: 'absolute',

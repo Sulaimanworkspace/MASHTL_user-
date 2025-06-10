@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -8,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 const Notifications: React.FC = () => {
   const router = useRouter();
@@ -31,14 +31,18 @@ const Notifications: React.FC = () => {
           style={styles.backButton}
           onPress={() => router.push('/(tabs)/settings')}
         >
-          <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
+          <MaterialIcons name="arrow-right" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
       {/* Notifications Content */}
       <View style={styles.content}>
-        {/* Add your notifications content here */}
-        <Text>الاشعارات</Text>
+        <View style={styles.centerContent}>
+          <View style={styles.iconCircle}>
+            <MaterialIcons name="notifications-none" size={48} color="#BDBDBD" />
+          </View>
+          <Text style={styles.noNotifications}>لا يوجد اي اشعارات</Text>
+        </View>
       </View>
     </View>
   );
@@ -76,6 +80,26 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+  },
+  centerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#F2F2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  noNotifications: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

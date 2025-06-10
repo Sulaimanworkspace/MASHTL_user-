@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -8,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 const Complaints: React.FC = () => {
   const router = useRouter();
@@ -26,19 +26,21 @@ const Complaints: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        <Text style={styles.headerTitle}>الشكاوي</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.push('/(tabs)/settings')}
-        >
-          <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/settings')}>
+          <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>الشكاوى</Text>
+        <View style={{width: 32}} />
       </View>
 
       {/* Complaints Content */}
       <View style={styles.content}>
-        {/* Add your complaints content here */}
-        <Text>الشكاوي</Text>
+        <View style={styles.centerContent}>
+          <View style={styles.iconCircle}>
+            <MaterialIcons name="report-problem" size={48} color="#BDBDBD" />
+          </View>
+          <Text style={styles.noComplaints}>لا يوجد اي شكاوى</Text>
+        </View>
       </View>
     </View>
   );
@@ -76,6 +78,26 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+  },
+  centerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#F2F2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  noComplaints: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 
