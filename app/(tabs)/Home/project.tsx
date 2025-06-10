@@ -97,7 +97,7 @@ export default function ProjectScreen() {
           {/* Contact Button */}
           <TouchableOpacity style={styles.gradientButtonWrapper}
             onPress={() => router.push({
-              pathname: '/(tabs)/Home/project-form',
+              pathname: '/(tabs)/project-form',
               params: {
                 name: name,
                 image: image,
@@ -105,14 +105,9 @@ export default function ProjectScreen() {
               }
             })}
           >
-            <LinearGradient
-              colors={["#4CAF50", "#179a3a"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.gradientButton}
-            >
+            <View style={styles.gradientButton}>
               <Text style={styles.gradientButtonText}>تواصل معنا</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -249,6 +244,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     elevation: 2,
+    backgroundColor: '#2E8B57',
   },
   gradientButtonText: {
     color: '#fff',

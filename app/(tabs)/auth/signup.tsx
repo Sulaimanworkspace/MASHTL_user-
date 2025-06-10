@@ -11,7 +11,6 @@ export default function SignupScreen() {
 
   const handleSignup = () => {
     // TODO: Implement signup logic
-    alert('تم إنشاء الحساب!');
   };
 
   return (
@@ -75,18 +74,14 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: '#222',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   container: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 24,
-    width: 280,
+    flex: 1,
+    width: '100%',
     alignItems: 'center',
-    alignSelf: 'center',
-    marginVertical: 32,
+    paddingHorizontal: 24,
+    paddingTop: 60,
   },
   logo: {
     width: 120,

@@ -87,7 +87,7 @@ export default function CustomFooter() {
         onPress={() => navigateTo('/(tabs)/settings')}
       >
         <FontAwesome5
-          name="cog"
+          name="user"
           size={24}
           color={isActive('/(tabs)/settings') ? Colors.primary : Colors.secondary}
           solid={isActive('/(tabs)/settings')}
@@ -98,7 +98,7 @@ export default function CustomFooter() {
             { color: isActive('/(tabs)/settings') ? Colors.primary : Colors.secondary },
           ]}
         >
-          الإعدادات
+          حسابي
         </Text>
       </TouchableOpacity>
     </View>

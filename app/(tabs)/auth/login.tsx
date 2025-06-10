@@ -55,7 +55,7 @@ export default function LoginScreen() {
           <Text style={styles.buttonText}>إنشاء حساب جديد</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.signupButton]} onPress={() => router.push('/(tabs)/Home')}>
-          <Text style={styles.buttonText}>متابعة من دوت</Text>
+          <Text style={styles.buttonText}>متابعة من دون تسحيل الدخول</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -65,16 +65,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: '#222',
+    backgroundColor: '#fff',
   },
   container: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 24,
+    flex: 1,
     width: '100%',
     alignItems: 'center',
-    alignSelf: 'center',
-    marginVertical: 32,
+    paddingHorizontal: 24,
+    paddingTop: 60,
   },
   logo: {
     width: 120,

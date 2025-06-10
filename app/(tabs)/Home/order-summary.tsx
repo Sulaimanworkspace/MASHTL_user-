@@ -109,7 +109,9 @@ export default function OrderSummaryScreen() {
               }
             }}
           >
-            <Text style={styles.submitButtonText}>تأكيد الطلب</Text>
+            <View style={styles.submitButtonInner}>
+              <Text style={styles.submitButtonText}>تأكيد الطلب</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -230,11 +232,15 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   submitButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
     marginTop: 20,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  submitButtonInner: {
+    backgroundColor: '#2E8B57',
+    paddingVertical: 16,
+    alignItems: 'center',
+    width: '100%',
   },
   submitButtonText: {
     color: '#FFFFFF',

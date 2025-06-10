@@ -91,14 +91,9 @@ export default function ServiceDetailsScreen() {
             description: description,
           }
         })}>
-          <LinearGradient
-            colors={["#4CAF50", "#179a3a"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.gradientButton}
-          >
+          <View style={styles.gradientButton}>
             <Text style={styles.gradientButtonText}>طلب الخدمة</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -237,6 +232,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     elevation: 2,
+    backgroundColor: '#2E8B57',
   },
   gradientButtonText: {
     color: '#fff',
