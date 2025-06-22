@@ -53,16 +53,23 @@ export default function LocationPickerModal({
   const loadSavedLocation = async () => {
     try {
       const userData = await getUserData();
-      if (userData && userData.location) {
+      console.log('🔍 LocationPickerModal - Loading user data:', userData);
+      
+      if (userData && userData.location && userData.location.address && userData.location.latitude && userData.location.longitude) {
+        console.log('✅ Valid location found:', userData.location);
         setCurrentLocation({
           latitude: userData.location.latitude,
           longitude: userData.location.longitude,
           address: userData.location.address,
           city: userData.location.city || 'الرياض',
         });
+      } else {
+        console.log('❌ No valid location found for user');
+        setCurrentLocation(null);
       }
     } catch (error) {
       console.error('Error loading saved location:', error);
+      setCurrentLocation(null);
     }
   };
 
