@@ -1,12 +1,30 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getUserData } from '../../services/api';
 import Colors from '../../_colors';
 
 export default function ProjectScreen() {
   const router = useRouter();
   const { id, name, image, description } = useLocalSearchParams();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check authentication status
+  useFocusEffect(
+    useCallback(() => {
+      const checkAuthStatus = async () => {
+        try {
+          const userData = await getUserData();
+          setIsLoggedIn(userData && userData.name ? true : false);
+        } catch (error) {
+          setIsLoggedIn(false);
+        }
+      };
+      checkAuthStatus();
+    }, [])
+  );
 
   return (
     <View style={styles.container}>
@@ -96,14 +114,20 @@ export default function ProjectScreen() {
 
           {/* Contact Button */}
           <TouchableOpacity style={styles.gradientButtonWrapper}
-            onPress={() => router.push({
-              pathname: '/(tabs)/Home/project-form',
-              params: {
-                name: name,
-                image: image,
-                description: description,
+            onPress={() => {
+              if (!isLoggedIn) {
+                router.replace('/(tabs)/auth/login');
+                return;
               }
-            })}
+              router.push({
+                pathname: '/(tabs)/Home/project-form',
+                params: {
+                  name: name,
+                  image: image,
+                  description: description,
+                }
+              });
+            }}
           >
             <View style={styles.gradientButton}>
               <Text style={styles.gradientButtonText}>تواصل معنا</Text>

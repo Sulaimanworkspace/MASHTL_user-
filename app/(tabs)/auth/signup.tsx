@@ -1,7 +1,7 @@
 import { useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal } from 'react-native';
-import { registerUser, sendOTP, verifyOTP, storeUserData } from '../../services/api';
+import { registerUser, sendOTP, verifyOTP, storeUserData, checkPhoneExists } from '../../services/api';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -9,14 +9,19 @@ export default function SignupScreen() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [loading, setLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [phoneValidating, setPhoneValidating] = useState(false);
+  const [phoneValid, setPhoneValid] = useState(false);
   
   // Refs for OTP inputs
   const otpRefs = useRef<(TextInput | null)[]>([]);
+  const phoneValidationTimeout = useRef<any>(null);
 
   // Clear form when screen is focused (when user enters the page)
   useFocusEffect(
@@ -25,20 +30,41 @@ export default function SignupScreen() {
       setPhone('');
       setPassword('');
       setConfirmPassword('');
+      setShowPassword(false);
+      setShowConfirmPassword(false);
       setErrors({});
       setLoading(false);
       setShowOTPModal(false);
       setOtp(['', '', '', '', '', '']);
       setOtpLoading(false);
+      setPhoneValidating(false);
+      setPhoneValid(false);
+      // Clear any pending validation
+      if (phoneValidationTimeout.current) {
+        clearTimeout(phoneValidationTimeout.current);
+      }
     }, [])
   );
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (phoneValidationTimeout.current) {
+        clearTimeout(phoneValidationTimeout.current);
+      }
+    };
+  }, []);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
-    // Name validation
+    // Name validation - only Arabic letters
     if (!name.trim()) {
       newErrors.name = 'الاسم مطلوب';
+    } else if (name.trim().length < 2) {
+      newErrors.name = 'الاسم يجب أن يكون حرفين على الأقل';
+    } else if (!/^[\u0600-\u06FF\s]+$/.test(name.trim())) {
+      newErrors.name = 'الاسم يجب أن يحتوي على أحرف عربية فقط';
     }
 
     // Phone validation - must start with 5 and be exactly 9 digits
@@ -72,6 +98,21 @@ export default function SignupScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleNameChange = (text: string) => {
+    // Allow all characters but show warning for non-Arabic
+    setName(text);
+    
+    // Check if contains non-Arabic characters
+    if (text && !/^[\u0600-\u06FF\s]*$/.test(text)) {
+      setErrors(prev => ({ ...prev, name: 'يرجى كتابة الاسم باللغة العربية' }));
+    } else {
+      // Clear name error when user types Arabic
+      if (errors.name) {
+        setErrors(prev => ({ ...prev, name: '' }));
+      }
+    }
+  };
+
   const handlePhoneChange = (text: string) => {
     // Only allow digits
     const digitsOnly = text.replace(/\D/g, '');
@@ -88,6 +129,40 @@ export default function SignupScreen() {
     // Clear phone error when user starts typing
     if (errors.phone) {
       setErrors(prev => ({ ...prev, phone: '' }));
+    }
+
+    // Live validation with debounce - check if phone exists when user finishes typing 9 digits
+    if (cleaned.length === 9) {
+      // Clear any existing timeout
+      if (phoneValidationTimeout.current) {
+        clearTimeout(phoneValidationTimeout.current);
+      }
+      
+      // Set new timeout for validation
+      phoneValidationTimeout.current = setTimeout(async () => {
+        setPhoneValidating(true);
+        try {
+          const fullPhone = `+966${cleaned}`;
+          await checkPhoneExists(fullPhone);
+          // If no error, phone is available
+          setErrors(prev => ({ ...prev, phone: '' }));
+          setPhoneValid(true);
+        } catch (error: any) {
+          if (error.response?.data?.message === 'هذا الرقم مسجل بالفعل') {
+            setErrors(prev => ({ ...prev, phone: 'رقم الهاتف مستخدم بالفعل' }));
+          }
+          setPhoneValid(false);
+        } finally {
+          setPhoneValidating(false);
+        }
+      }, 800); // 800ms delay for better UX
+    } else if (cleaned.length < 9) {
+      // Clear validation when less than 9 digits
+      setPhoneValidating(false);
+      setPhoneValid(false);
+      if (phoneValidationTimeout.current) {
+        clearTimeout(phoneValidationTimeout.current);
+      }
     }
   };
 
@@ -159,8 +234,8 @@ export default function SignupScreen() {
       const fullPhone = `+966${phone}`;
       console.log('Sending OTP to:', fullPhone);
       
-      // Send OTP first
-      const otpResult = await sendOTP(fullPhone);
+      // Send OTP first - specify it's for signup
+      const otpResult = await sendOTP(fullPhone, 'signup');
       console.log('OTP sent successfully:', otpResult);
       
       // Clear previous OTP and show modal
@@ -189,19 +264,20 @@ export default function SignupScreen() {
             style={[styles.input, errors.name && styles.inputError]}
             placeholder="الاسم"
             value={name}
-            onChangeText={(text) => {
-              setName(text);
-              if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
-            }}
+            onChangeText={handleNameChange}
             placeholderTextColor="#BDBDBD"
             textAlign="right"
           />
           {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
           
-          <View style={styles.phoneContainer}>
+          <View style={[
+            styles.phoneContainer, 
+            phoneValidating && styles.phoneValidating,
+            phoneValid && styles.phoneValid
+          ]}>
             <TextInput
               style={[styles.phoneInput, errors.phone && styles.inputError]}
-              placeholder="512345678"
+              placeholder="5xxxxxxxxx"
               value={phone}
               onChangeText={handlePhoneChange}
               placeholderTextColor="#BDBDBD"
@@ -210,12 +286,22 @@ export default function SignupScreen() {
               maxLength={9}
             />
             <Text style={styles.phonePrefix}>+966</Text>
+            {phoneValidating && (
+              <View style={styles.validatingContainer}>
+                <Text style={styles.validatingText}>جاري التحقق...</Text>
+              </View>
+            )}
+            {phoneValid && !phoneValidating && (
+              <View style={styles.validContainer}>
+                <Text style={styles.validText}>متاح ✓</Text>
+              </View>
+            )}
           </View>
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
           
           <View style={styles.passwordRow}>
             <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0 }, errors.password && styles.inputError]}
+              style={[styles.input, { flex: 1, marginBottom: 0, paddingLeft: 50 }, errors.password && styles.inputError]}
               placeholder="كلمة المرور"
               value={password}
               onChangeText={(text) => {
@@ -223,16 +309,21 @@ export default function SignupScreen() {
                 if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
               }}
               placeholderTextColor="#BDBDBD"
-              secureTextEntry
+              secureTextEntry={!showPassword}
               textAlign="right"
             />
-            <Text style={styles.passwordIcon}>🗝️</Text>
+            <TouchableOpacity 
+              style={styles.eyeIconLeft}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Text style={styles.eyeIconText}>{showPassword ? '👁' : '👁‍🗨'}</Text>
+            </TouchableOpacity>
           </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
           
           <View style={styles.passwordRow}>
             <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0 }, errors.confirmPassword && styles.inputError]}
+              style={[styles.input, { flex: 1, marginBottom: 0, paddingLeft: 50 }, errors.confirmPassword && styles.inputError]}
               placeholder="تأكيد كلمة المرور"
               value={confirmPassword}
               onChangeText={(text) => {
@@ -240,10 +331,15 @@ export default function SignupScreen() {
                 if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
               }}
               placeholderTextColor="#BDBDBD"
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword}
               textAlign="right"
             />
-            <Text style={styles.passwordIcon}>🗝️</Text>
+            <TouchableOpacity 
+              style={styles.eyeIconLeft}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              <Text style={styles.eyeIconText}>{showConfirmPassword ? '👁' : '👁‍🗨'}</Text>
+            </TouchableOpacity>
           </View>
           {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
           
@@ -355,8 +451,8 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderWidth: 1,
-    borderColor: '#f44336',
-    marginBottom: 5,
+    borderColor: '#FF5252',
+    backgroundColor: '#FFEBEE',
   },
   phoneContainer: {
     flexDirection: 'row-reverse',
@@ -365,11 +461,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
     marginBottom: 14,
+    position: 'relative',
+    minHeight: 44,
   },
   phoneInput: {
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 16,
+    paddingRight: 80, // Space for validation indicator
     fontSize: 15,
     color: '#222',
     backgroundColor: 'transparent',
@@ -393,13 +492,70 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#888',
   },
+  eyeIcon: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  eyeIconLeft: {
+    position: 'absolute',
+    left: 15,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    padding: 8,
+    zIndex: 1,
+  },
+  eyeIconText: {
+    fontSize: 18,
+    color: '#888',
+  },
+  phoneValidating: {
+    borderColor: '#4CAF50',
+    borderWidth: 1,
+  },
+  phoneValid: {
+    borderColor: '#4CAF50',
+    borderWidth: 2,
+  },
+  validatingContainer: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    transform: [{ translateY: -10 }],
+    zIndex: 2,
+  },
+  validatingText: {
+    fontSize: 9,
+    color: '#4CAF50',
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 3,
+    fontWeight: '500',
+  },
+  validContainer: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    transform: [{ translateY: -10 }],
+    zIndex: 2,
+  },
+  validText: {
+    fontSize: 9,
+    color: '#4CAF50',
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 3,
+    fontWeight: 'bold',
+  },
   errorText: {
-    color: '#f44336',
+    color: '#FF5252',
     fontSize: 12,
     textAlign: 'right',
     width: '100%',
+    marginTop: 4,
     marginBottom: 8,
-    marginTop: -8,
+    fontWeight: '500',
   },
   button: {
     backgroundColor: '#4CAF50',

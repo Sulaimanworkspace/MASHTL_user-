@@ -1,7 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import {
   Dimensions,
   Image,
@@ -11,11 +11,39 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { getUserData } from '../../services/api';
 
 const { width, height } = Dimensions.get('window');
 
 const User17: React.FC = () => {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication and redirect if not logged in
+  useFocusEffect(
+    useCallback(() => {
+      const checkAuthStatus = async () => {
+        try {
+          const userData = await getUserData();
+          if (!userData || !userData.name) {
+            router.replace('/(tabs)/auth/login');
+            return;
+          }
+          setIsLoggedIn(true);
+          setIsLoading(false);
+        } catch (error) {
+          router.replace('/(tabs)/auth/login');
+        }
+      };
+      checkAuthStatus();
+    }, [])
+  );
+
+  // Don't render anything if not authenticated (prevents flash)
+  if (!isLoggedIn && isLoading) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>

@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import React, { useState, useRef } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useRef, useCallback } from 'react';
 import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal } from 'react-native';
 import { login, sendOTP, verifyOTP, storeUserData } from '../../services/api';
 
@@ -7,6 +7,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [loading, setLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -15,6 +16,20 @@ export default function LoginScreen() {
   
   // Refs for OTP inputs
   const otpRefs = useRef<(TextInput | null)[]>([]);
+
+  // Clear form data when screen is focused for security
+  useFocusEffect(
+    useCallback(() => {
+      setPhone('');
+      setPassword('');
+      setOtp(['', '', '', '', '', '']);
+      setErrors({});
+      setShowOTPModal(false);
+      setShowPassword(false);
+      setLoading(false);
+      setOtpLoading(false);
+    }, [])
+  );
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -72,8 +87,8 @@ export default function LoginScreen() {
       // First verify credentials
       await login(fullPhone, password);
       
-      // Then send OTP
-      await sendOTP(fullPhone);
+      // Then send OTP for login
+      await sendOTP(fullPhone, 'login');
       
       // Show OTP modal
       setShowOTPModal(true);
@@ -92,8 +107,15 @@ export default function LoginScreen() {
     newOtp[index] = value;
     setOtp(newOtp);
     
-    // Auto focus next input - React Native doesn't support getElementById
-    // We'll handle this with refs if needed later
+    // Auto focus next input when digit is entered
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+    
+    // Auto focus previous input when digit is deleted
+    if (!value && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
   };
 
   const handleVerifyOTP = async () => {
@@ -136,7 +158,7 @@ export default function LoginScreen() {
           <View style={styles.phoneContainer}>
             <TextInput
               style={[styles.phoneInput, errors.phone && styles.inputError]}
-              placeholder="512345678"
+              placeholder="5xxxxxxxxx"
               value={phone}
               onChangeText={handlePhoneChange}
               placeholderTextColor="#BDBDBD"
@@ -150,7 +172,7 @@ export default function LoginScreen() {
           
           <View style={styles.passwordRow}>
             <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0 }, errors.password && styles.inputError]}
+              style={[styles.input, { flex: 1, marginBottom: 0, paddingLeft: 50 }, errors.password && styles.inputError]}
               placeholder="كلمة المرور"
               value={password}
               onChangeText={(text) => {
@@ -158,10 +180,15 @@ export default function LoginScreen() {
                 if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
               }}
               placeholderTextColor="#BDBDBD"
-              secureTextEntry
+              secureTextEntry={!showPassword}
               textAlign="right"
             />
-            <Text style={styles.passwordIcon}>🗝️</Text>
+            <TouchableOpacity 
+              style={styles.eyeIconLeft}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Text style={styles.eyeIconText}>{showPassword ? '👁' : '👁‍🗨'}</Text>
+            </TouchableOpacity>
           </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
           
@@ -202,6 +229,7 @@ export default function LoginScreen() {
                 {otp.map((digit, index) => (
                   <TextInput
                     key={index}
+                    ref={(ref) => { otpRefs.current[index] = ref; }}
                     style={styles.otpInput}
                     value={digit}
                     onChangeText={(value) => handleOTPChange(value, index)}
@@ -276,8 +304,8 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderWidth: 1,
-    borderColor: '#f44336',
-    marginBottom: 5,
+    borderColor: '#FF5252',
+    backgroundColor: '#FFEBEE',
   },
   phoneContainer: {
     flexDirection: 'row-reverse',
@@ -314,13 +342,30 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#888',
   },
+  eyeIcon: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  eyeIconLeft: {
+    position: 'absolute',
+    left: 15,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    padding: 8,
+    zIndex: 1,
+  },
+  eyeIconText: {
+    fontSize: 18,
+    color: '#888',
+  },
   errorText: {
-    color: '#f44336',
+    color: '#FF5252',
     fontSize: 12,
     textAlign: 'right',
     width: '100%',
+    marginTop: 4,
     marginBottom: 8,
-    marginTop: -8,
+    fontWeight: '500',
   },
   button: {
     backgroundColor: '#4CAF50',

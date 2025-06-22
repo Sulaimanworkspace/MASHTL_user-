@@ -61,6 +61,8 @@ interface ServiceData {
 const User4: React.FC = () => {
   const router = useRouter();
   const [userName, setUserName] = useState('ضيف');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userLocation, setUserLocation] = useState('اختر موقعك');
 
   // Load user data every time screen is focused (including after auth)
   useFocusEffect(
@@ -71,14 +73,20 @@ const User4: React.FC = () => {
           console.log('📱 Home screen focused - checking user data:', userData);
           if (userData && userData.name) {
             setUserName(userData.name);
+            setIsLoggedIn(true);
+            setUserLocation('حى الازدهار, الرياض'); // Default location for signed-in users
             console.log('✅ User is signed in:', userData.name);
           } else {
             setUserName('ضيف');
+            setIsLoggedIn(false);
+            setUserLocation('اختر موقعك');
             console.log('❌ No user data - showing guest');
           }
         } catch (error) {
           console.error('Error loading user data:', error);
           setUserName('ضيف');
+          setIsLoggedIn(false);
+          setUserLocation('اختر موقعك');
         }
       };
 
@@ -167,29 +175,34 @@ const User4: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        <TouchableOpacity style={styles.notificationCircle} onPress={handleNotificationPress}>
-          <Image
-            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1827/1827392.png' }}
-            style={styles.notificationIconWhite}
-          />
-          <View style={styles.notificationBadge}>
-            <Text style={styles.notificationBadgeText}>1</Text>
-          </View>
-        </TouchableOpacity>
-        <View style={styles.nameAndNotification}>
-          <TouchableOpacity 
-            style={styles.notificationButton}
-            onPress={handleNotificationPress}
-          >
+        {isLoggedIn && (
+          <TouchableOpacity style={styles.notificationCircle} onPress={handleNotificationPress}>
             <Image
-              source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/5610980971e7eae9538d65e51902f648fe9062c8?placeholderIfAbsent=true" }}
-              style={styles.notificationIcon}
+              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1827/1827392.png' }}
+              style={styles.notificationIconWhite}
             />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>1</Text>
+            </View>
           </TouchableOpacity>
+        )}
+        <View style={styles.nameAndNotification}>
           <View style={styles.nameSection}>
             <Text style={styles.greetingText}>مرحباً {userName}👋</Text>
-            <View style={styles.locationRow}>
-              <Text style={styles.locationText}>حى الازدهار, الرياض</Text>
+            <TouchableOpacity 
+              style={styles.locationRow}
+              onPress={() => {
+                if (isLoggedIn) {
+                  // TODO: Open location picker
+                  console.log('Open location picker');
+                } else {
+                  router.replace('/(tabs)/auth/login');
+                }
+              }}
+            >
+              <Text style={[styles.locationText, !isLoggedIn && styles.locationTextGuest]}>
+                {userLocation}
+              </Text>
               <Image
                 source={{ uri: 'https://cdn-icons-png.flaticon.com/512/484/484167.png' }}
                 style={styles.waypointIcon}
@@ -198,8 +211,19 @@ const User4: React.FC = () => {
                 source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/3aade2a1cb28d2faf4973f9133e53a7e3e952884?placeholderIfAbsent=true" }}
                 style={styles.locationIcon}
               />
-            </View>
+            </TouchableOpacity>
           </View>
+          {isLoggedIn && (
+            <TouchableOpacity 
+              style={styles.notificationButton}
+              onPress={handleNotificationPress}
+            >
+                             <Image
+                 source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/5610980971e7eae9538d65e51902f648fe9062c8?placeholderIfAbsent=true" }}
+                 style={styles.notificationIcon}
+               />
+             </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -332,15 +356,18 @@ const styles = StyleSheet.create({
   nameAndNotification: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
   },
 
   notificationButton: {
-    marginRight: 15,
+    marginLeft: 15,
     marginTop: 5,
   },
 
   nameSection: {
     alignItems: 'flex-end',
+    flex: 1,
   },
 
   greetingText: {
@@ -362,6 +389,10 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginRight: 5,
     opacity: 0.9,
+  },
+  locationTextGuest: {
+    color: '#CCCCCC',
+    fontStyle: 'italic',
   },
 
   locationIcon: {

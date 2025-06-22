@@ -1,11 +1,29 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getUserData } from '../../services/api';
 
 export default function ServiceDetailsScreen() {
   const router = useRouter();
   const { id, name, image, description } = useLocalSearchParams();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check authentication status
+  useFocusEffect(
+    useCallback(() => {
+      const checkAuthStatus = async () => {
+        try {
+          const userData = await getUserData();
+          setIsLoggedIn(userData && userData.name ? true : false);
+        } catch (error) {
+          setIsLoggedIn(false);
+        }
+      };
+      checkAuthStatus();
+    }, [])
+  );
 
   // Example features for each service
   const featuresData: Record<string, string[]> = {
@@ -82,15 +100,21 @@ export default function ServiceDetailsScreen() {
             </View>
           ))}
         </View>
-        <TouchableOpacity style={styles.gradientButtonWrapper} onPress={() => router.push({
-          pathname: '/(tabs)/Home/order-summary',
-          params: {
-            projectName: name,
-            projectType: 'خدمة',
-            image: image,
-            description: description,
+        <TouchableOpacity style={styles.gradientButtonWrapper} onPress={() => {
+          if (!isLoggedIn) {
+            router.replace('/(tabs)/auth/login');
+            return;
           }
-        })}>
+          router.push({
+            pathname: '/(tabs)/Home/order-summary',
+            params: {
+              projectName: name,
+              projectType: 'خدمة',
+              image: image,
+              description: description,
+            }
+          });
+        }}>
           <View style={styles.gradientButton}>
             <Text style={styles.gradientButtonText}>طلب الخدمة</Text>
           </View>

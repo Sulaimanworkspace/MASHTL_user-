@@ -1,12 +1,35 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { chatList, ChatPreview } from '../../data/chatData';
+import { getUserData } from '../../services/api';
 
 const ChatInboxScreen: React.FC = () => {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication and redirect if not logged in
+  useFocusEffect(
+    useCallback(() => {
+      const checkAuthStatus = async () => {
+        try {
+          const userData = await getUserData();
+          if (!userData || !userData.name) {
+            router.replace('/(tabs)/auth/login');
+            return;
+          }
+          setIsLoggedIn(true);
+          setIsLoading(false);
+        } catch (error) {
+          router.replace('/(tabs)/auth/login');
+        }
+      };
+      checkAuthStatus();
+    }, [])
+  );
 
   const renderItem = ({ item }: { item: ChatPreview }) => (
     <TouchableOpacity style={styles.chatItem} onPress={() => router.push(`/chats/message?id=${item.id}`)}>
@@ -23,6 +46,11 @@ const ChatInboxScreen: React.FC = () => {
       </View>
     </TouchableOpacity>
   );
+
+  // Don't render anything if not authenticated (prevents flash)
+  if (!isLoggedIn && isLoading) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>

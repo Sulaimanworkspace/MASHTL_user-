@@ -9,10 +9,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
 import { getUserData, clearUserData } from '../../services/api';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -68,6 +68,7 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
 const User19: React.FC = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Check auth status when screen is focused
   useFocusEffect(
@@ -97,14 +98,25 @@ const User19: React.FC = () => {
     try {
       await clearUserData();
       setIsLoggedIn(false);
+      setShowLogoutModal(false); // Close the modal
       console.log('✅ User logged out successfully');
-      router.replace('/(tabs)/auth/login');
+      router.replace('/(tabs)/Home'); // Redirect to homepage instead of login
     } catch (error) {
       console.error('Error during logout:', error);
+      setShowLogoutModal(false); // Close modal even if error occurs
     }
   };
 
   const handleMenuPress = (menuName: string) => {
+    // Check authentication for protected menu items
+    const protectedMenus = ['wallet', 'notifications', 'complaints', 'settings'];
+    
+    if (protectedMenus.includes(menuName) && !isLoggedIn) {
+      // Redirect to login if user is not authenticated
+      router.replace('/(tabs)/auth/login');
+      return;
+    }
+
     switch (menuName) {
       case 'wallet':
         router.push('/settings/wallet');
@@ -120,12 +132,10 @@ const User19: React.FC = () => {
         break;
       case 'about':
         router.push('/(tabs)/settings/about');
-        router.push('/settings/about');
         break;
       case 'logout':
         if (isLoggedIn) {
-          // Handle logout - simple logout without modal for now
-          handleLogout();
+          setShowLogoutModal(true);
         } else {
           router.replace('/(tabs)/auth/login');
         }
@@ -202,6 +212,39 @@ const User19: React.FC = () => {
           onPress={() => handleMenuPress('logout')}
         />
       </View>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        visible={showLogoutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.logoutIconContainer}>
+              <FontAwesome5 name="sign-out-alt" size={40} color="#FF0000" />
+            </View>
+            <Text style={styles.logoutText}>
+              هل أنت متأكد من تسجيل الخروج؟
+            </Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>إلغاء</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.confirmButton}
+                onPress={handleLogout}
+              >
+                <Text style={styles.confirmButtonText}>تأكيد</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -378,6 +421,61 @@ const styles = StyleSheet.create({
 
   menuLeftChevron: {
     marginLeft: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    alignItems: 'center',
+  },
+  logoutIconContainer: {
+    marginBottom: 16,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: '#333333',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 12,
+  },
+  confirmButton: {
+    backgroundColor: '#FF0000',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    flex: 1,
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#E0E0E0',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    flex: 1,
+  },
+  cancelButtonText: {
+    color: '#333333',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

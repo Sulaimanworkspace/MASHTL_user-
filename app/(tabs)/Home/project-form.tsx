@@ -1,7 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ProjectFormScreen() {
@@ -16,6 +16,21 @@ export default function ProjectFormScreen() {
     price: '',
     other: '',
   });
+
+  // Clear form data when screen is focused for security
+  useFocusEffect(
+    useCallback(() => {
+      setForm({
+        projectName: '',
+        projectType: '',
+        city: '',
+        address: '',
+        duration: '',
+        price: '',
+        other: '',
+      });
+    }, [])
+  );
 
   const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));

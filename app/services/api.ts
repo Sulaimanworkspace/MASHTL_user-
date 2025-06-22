@@ -112,21 +112,26 @@ export const registerUser = async (userData: { name: string; phone: string; pass
   return response.data;
 };
 
-export const sendOTP = async (phone: string) => {
+export const sendOTP = async (phone: string, type?: string) => {
   // Try to find working URL if current one fails
   try {
-    const response = await api.post('/auth/send-otp', { phone });
+    const response = await api.post('/auth/send-otp', { phone, type });
     return response.data;
   } catch (error) {
     console.log('🔄 Retrying with different API URL...');
     await testAPIConnection();
-    const response = await api.post('/auth/send-otp', { phone });
+    const response = await api.post('/auth/send-otp', { phone, type });
     return response.data;
   }
 };
 
 export const verifyOTP = async (phone: string, otp: string) => {
   const response = await api.post('/auth/verify-otp', { phone, otp });
+  return response.data;
+};
+
+export const checkPhoneExists = async (phone: string) => {
+  const response = await api.post('/auth/check-phone', { phone });
   return response.data;
 };
 
