@@ -77,14 +77,14 @@ const User4: React.FC = () => {
             setUserLocation('حى الازدهار, الرياض'); // Default location for signed-in users
             console.log('✅ User is signed in:', userData.name);
           } else {
-            setUserName('ضيف');
+            setUserName('بك في مشتل');
             setIsLoggedIn(false);
             setUserLocation('اختر موقعك');
             console.log('❌ No user data - showing guest');
           }
         } catch (error) {
           console.error('Error loading user data:', error);
-          setUserName('ضيف');
+          setUserName('بك في مشتل');
           setIsLoggedIn(false);
           setUserLocation('اختر موقعك');
         }
