@@ -93,6 +93,17 @@ const User19: React.FC = () => {
     }, [])
   );
 
+  const handleLogout = async () => {
+    try {
+      await clearUserData();
+      setIsLoggedIn(false);
+      console.log('✅ User logged out successfully');
+      router.replace('/(tabs)/auth/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
   const handleMenuPress = (menuName: string) => {
     switch (menuName) {
       case 'wallet':
@@ -187,8 +198,8 @@ const User19: React.FC = () => {
         <MenuListItem
           iconName="sign-out"
           iconFamily="FontAwesome"
-          title="تسجيل الدخول"
-          onPress={() => router.replace('/(tabs)/auth/login')}
+          title={isLoggedIn ? "تسجيل الخروج" : "تسجيل الدخول"}
+          onPress={() => handleMenuPress('logout')}
         />
       </View>
     </View>
