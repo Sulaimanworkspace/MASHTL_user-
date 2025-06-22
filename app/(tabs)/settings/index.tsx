@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import {
   Dimensions,
   Image,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { getUserData, clearUserData } from '../../services/api';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
@@ -66,6 +67,31 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
 
 const User19: React.FC = () => {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check auth status when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const checkAuthStatus = async () => {
+        try {
+          const userData = await getUserData();
+          console.log('⚙️ Settings - checking auth status:', userData);
+          if (userData && userData.name) {
+            setIsLoggedIn(true);
+            console.log('✅ User is logged in');
+          } else {
+            setIsLoggedIn(false);
+            console.log('❌ User is not logged in');
+          }
+        } catch (error) {
+          console.error('Error checking auth status:', error);
+          setIsLoggedIn(false);
+        }
+      };
+
+      checkAuthStatus();
+    }, [])
+  );
 
   const handleMenuPress = (menuName: string) => {
     switch (menuName) {
@@ -86,8 +112,12 @@ const User19: React.FC = () => {
         router.push('/settings/about');
         break;
       case 'logout':
-        // Handle logout logic here
-        console.log('Logout pressed');
+        if (isLoggedIn) {
+          // Handle logout - simple logout without modal for now
+          handleLogout();
+        } else {
+          router.replace('/(tabs)/auth/login');
+        }
         break;
     }
   };

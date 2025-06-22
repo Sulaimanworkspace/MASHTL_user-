@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import {
     Dimensions,
     Image,
@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { getUserData } from '../../services/api';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 
@@ -59,6 +60,31 @@ interface ServiceData {
 
 const User4: React.FC = () => {
   const router = useRouter();
+  const [userName, setUserName] = useState('ضيف');
+
+  // Load user data every time screen is focused (including after auth)
+  useFocusEffect(
+    useCallback(() => {
+      const loadUserData = async () => {
+        try {
+          const userData = await getUserData();
+          console.log('📱 Home screen focused - checking user data:', userData);
+          if (userData && userData.name) {
+            setUserName(userData.name);
+            console.log('✅ User is signed in:', userData.name);
+          } else {
+            setUserName('ضيف');
+            console.log('❌ No user data - showing guest');
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          setUserName('ضيف');
+        }
+      };
+
+      loadUserData();
+    }, [])
+  );
 
   const bannerImages = [
     "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/93029b0fe0d878c1b88db46f2f108f549ea83b58?placeholderIfAbsent=true",
@@ -161,7 +187,7 @@ const User4: React.FC = () => {
             />
           </TouchableOpacity>
           <View style={styles.nameSection}>
-            <Text style={styles.greetingText}>مرحباً سليمان👋</Text>
+            <Text style={styles.greetingText}>مرحباً {userName}👋</Text>
             <View style={styles.locationRow}>
               <Text style={styles.locationText}>حى الازدهار, الرياض</Text>
               <Image

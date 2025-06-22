@@ -26,24 +26,24 @@ const Wallet: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/settings')}>
-          <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>محفظتي</Text>
         <View style={styles.walletInfoHeaderRow}>
           <MaterialIcons name="account-balance-wallet" size={16} color="#fff" style={{ marginLeft: 2 }} />
           <Text style={styles.walletInfoHeaderLabel}>محفظتي</Text>
           <Text style={styles.walletInfoHeaderCurrency}>ريال</Text>
           <Text style={styles.walletInfoHeaderAmount}>0.00</Text>
         </View>
+        <Text style={styles.headerTitle}>محفظتي</Text>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/settings')}>
+          <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
-      {/* Wallet Info Row */}
-      <View style={styles.walletInfoRow}>
-        <MaterialIcons name="account-balance-wallet" size={18} color="#222" style={{ marginLeft: 4 }} />
-        <Text style={styles.walletInfoLabel}>محفظتي</Text>
-        <Text style={styles.walletInfoAmount}>0.00</Text>
-      </View>
+      {/*/!* Wallet Info Row *!/*/}
+      {/*<View style={styles.walletInfoRow}>*/}
+      {/*  <MaterialIcons name="account-balance-wallet" size={18} color="#222" style={{ marginLeft: 4 }} />*/}
+      {/*  <Text style={styles.walletInfoLabel}>محفظتي</Text>*/}
+      {/*  <Text style={styles.walletInfoAmount}>0.00</Text>*/}
+      {/*</View>*/}
 
       {/* Centered Content */}
       <View style={styles.centerContent}>
@@ -94,11 +94,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButton: {
-    position: 'absolute',
-    left: 16,
-    top: 54,
     padding: 8,
-    zIndex: 2,
   },
   walletInfoRow: {
     flexDirection: 'row-reverse',
