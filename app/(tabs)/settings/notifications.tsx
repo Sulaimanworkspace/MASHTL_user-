@@ -87,27 +87,14 @@ export default function SettingsNotificationsScreen() {
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
-    Alert.alert(
-      'حذف الإشعار',
-      'هل أنت متأكد من حذف هذا الإشعار؟',
-      [
-        { text: 'إلغاء', style: 'cancel' },
-        {
-          text: 'حذف',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteNotification(notificationId, userId);
-              setNotifications(prev => prev.filter(n => n._id !== notificationId));
-              console.log('✅ Notification deleted successfully');
-            } catch (error) {
-              console.error('Error deleting notification:', error);
-              Alert.alert('خطأ', 'فشل في حذف الإشعار');
-            }
-          }
-        }
-      ]
-    );
+    try {
+      await deleteNotification(notificationId, userId);
+      setNotifications(prev => prev.filter(n => n._id !== notificationId));
+      console.log('✅ Notification deleted successfully');
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      Alert.alert('خطأ', 'فشل في حذف الإشعار');
+    }
   };
 
   const formatTime = (dateString: string) => {
