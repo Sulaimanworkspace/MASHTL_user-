@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     Dimensions,
     Image,
@@ -11,9 +11,10 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { getUserData } from '../../services/api';
+import { getUserData, getNotificationCount } from '../../services/api';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
+import LocationPickerModal from '../../components/LocationPickerModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -60,9 +61,16 @@ interface ServiceData {
 
 const User4: React.FC = () => {
   const router = useRouter();
-  const [userName, setUserName] = useState('ضيف');
+  const [userName, setUserName] = useState('بك في مشتل');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userLocation, setUserLocation] = useState('اختر موقعك');
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+
+  // Debug: Log notification count changes
+  useEffect(() => {
+    console.log('🔴 Notification count changed to:', notificationCount);
+  }, [notificationCount]);
 
   // Load user data every time screen is focused (including after auth)
   useFocusEffect(
@@ -74,12 +82,34 @@ const User4: React.FC = () => {
           if (userData && userData.name) {
             setUserName(userData.name);
             setIsLoggedIn(true);
-            setUserLocation('حى الازدهار, الرياض'); // Default location for signed-in users
+            // Load user's saved location or show location picker prompt
+            if (userData.location && userData.location.address) {
+              const locationText = userData.location.city ? 
+                `${userData.location.address}, ${userData.location.city}` : 
+                userData.location.address;
+              setUserLocation(locationText);
+              console.log('📍 Location loaded:', locationText);
+            } else {
+              setUserLocation('اختر موقعك'); // Show location picker prompt for signed-in users without location
+              console.log('📍 No location found, showing picker prompt');
+            }
             console.log('✅ User is signed in:', userData.name);
+            
+            // Load notification count for logged-in users
+            try {
+              const countResponse = await getNotificationCount(userData._id);
+              if (countResponse.success) {
+                setNotificationCount(countResponse.data.unreadCount);
+              }
+            } catch (error) {
+              console.error('Error loading notification count:', error);
+              setNotificationCount(0);
+            }
           } else {
             setUserName('بك في مشتل');
             setIsLoggedIn(false);
             setUserLocation('اختر موقعك');
+            setNotificationCount(0);
             console.log('❌ No user data - showing guest');
           }
         } catch (error) {
@@ -91,6 +121,36 @@ const User4: React.FC = () => {
       };
 
       loadUserData();
+    }, [])
+  );
+
+  // Refresh notification count every time screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const refreshNotificationCount = async () => {
+        try {
+          const userData = await getUserData();
+          if (userData && userData._id) {
+                          const countResponse = await getNotificationCount(userData._id);
+              console.log('🔔 API Response:', countResponse);
+              if (countResponse.success) {
+                console.log('🔔 Setting count to:', countResponse.data.unreadCount);
+                setNotificationCount(countResponse.data.unreadCount);
+              } else {
+                console.log('❌ API response failed, setting count to 0');
+                setNotificationCount(0);
+              }
+          } else {
+            setNotificationCount(0);
+          }
+        } catch (error) {
+          console.error('Error refreshing notification count:', error);
+          setNotificationCount(0);
+        }
+      };
+
+      // Always refresh count when screen is focused
+      refreshNotificationCount();
     }, [])
   );
 
@@ -159,7 +219,15 @@ const User4: React.FC = () => {
   };
 
   const handleNotificationPress = () => {
-    router.replace('/(tabs)/Home/notifications');
+    router.push('/(tabs)/Home/notifications');
+  };
+
+  const handleLocationSaved = (location: any) => {
+    const locationText = location.city ? 
+      `${location.address}, ${location.city}` : 
+      location.address;
+    setUserLocation(locationText);
+    console.log('📍 Location saved and updated:', locationText);
   };
 
   return (
@@ -177,13 +245,17 @@ const User4: React.FC = () => {
         />
         {isLoggedIn && (
           <TouchableOpacity style={styles.notificationCircle} onPress={handleNotificationPress}>
-            <Image
-              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1827/1827392.png' }}
-              style={styles.notificationIconWhite}
-            />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>1</Text>
-            </View>
+                         <Image
+               source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3239/3239952.png' }}
+               style={styles.notificationIconWhite}
+             />
+                         {notificationCount > 0 && (
+               <View style={styles.notificationBadge}>
+                 <Text style={styles.notificationBadgeText}>
+                   {notificationCount > 99 ? '99+' : notificationCount}
+                 </Text>
+               </View>
+             )}
           </TouchableOpacity>
         )}
         <View style={styles.nameAndNotification}>
@@ -193,8 +265,7 @@ const User4: React.FC = () => {
               style={styles.locationRow}
               onPress={() => {
                 if (isLoggedIn) {
-                  // TODO: Open location picker
-                  console.log('Open location picker');
+                  setLocationModalVisible(true);
                 } else {
                   router.replace('/(tabs)/auth/login');
                 }
@@ -218,11 +289,18 @@ const User4: React.FC = () => {
               style={styles.notificationButton}
               onPress={handleNotificationPress}
             >
-                             <Image
-                 source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/5610980971e7eae9538d65e51902f648fe9062c8?placeholderIfAbsent=true" }}
-                 style={styles.notificationIcon}
-               />
-             </TouchableOpacity>
+              <Image
+                source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/5610980971e7eae9538d65e51902f648fe9062c8?placeholderIfAbsent=true" }}
+                style={styles.notificationIcon}
+              />
+              {notificationCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {notificationCount > 99 ? '99+' : notificationCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -273,6 +351,13 @@ const User4: React.FC = () => {
         </ScrollView>
         <CustomFooter />
       </View>
+
+      {/* Location Picker Modal */}
+      <LocationPickerModal
+        visible={locationModalVisible}
+        onClose={() => setLocationModalVisible(false)}
+        onLocationSaved={handleLocationSaved}
+      />
     </View>
   );
 };
@@ -335,8 +420,8 @@ const styles = StyleSheet.create({
 
   notificationBadge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: -5,
+    right: -5,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
@@ -363,6 +448,7 @@ const styles = StyleSheet.create({
   notificationButton: {
     marginLeft: 15,
     marginTop: 5,
+    position: 'relative',
   },
 
   nameSection: {
@@ -376,6 +462,8 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'right',
     marginBottom: 5,
+    marginRight: 0,
+    width: '100%',
   },
 
   locationRow: {

@@ -8,15 +8,35 @@
     "scheme": "userapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#2E8B57",
+      "resizeMode": "contain"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة"
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyDemoKeyForDevelopment123456789"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.jpg",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDemoKeyForDevelopment123456789"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -24,16 +44,7 @@
       "favicon": "./assets/images/icon.jpg"
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/icon.jpg",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,22 +1,153 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React from 'react';
-import {
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import Colors from '../../_colors';
+import { getUserData, getUserNotifications, deleteNotification, markNotificationAsRead } from '../../services/api';
 
-const Notifications: React.FC = () => {
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export default function SettingsNotificationsScreen() {
   const router = useRouter();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string>('');
+
+  // Load notifications when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      loadNotifications();
+    }, [])
+  );
+
+  // Mark all notifications as read when screen is focused and notifications are loaded
+  useFocusEffect(
+    useCallback(() => {
+      const markAllAsRead = async () => {
+        if (notifications.length > 0 && userId) {
+          try {
+            // Mark all unread notifications as read
+            const unreadNotifications = notifications.filter(n => !n.isRead);
+            if (unreadNotifications.length > 0) {
+              console.log(`📖 Marking ${unreadNotifications.length} notifications as read`);
+              
+              // Mark all unread notifications as read
+              for (const notification of unreadNotifications) {
+                await markNotificationAsRead(notification._id, userId);
+              }
+              
+              // Update local state to reflect read status immediately
+              setNotifications(prev => 
+                prev.map(n => ({ ...n, isRead: true }))
+              );
+              
+              console.log('✅ All notifications marked as read');
+            }
+          } catch (error) {
+            console.error('Error marking notifications as read:', error);
+          }
+        }
+      };
+
+      // Mark as read after notifications are loaded
+      if (notifications.length > 0 && userId) {
+        markAllAsRead();
+      }
+    }, [notifications.length, userId])
+  );
+
+  const loadNotifications = async () => {
+    try {
+      const userData = await getUserData();
+      if (!userData || !userData._id) {
+        router.replace('/(tabs)/auth/login');
+        return;
+      }
+      
+      setUserId(userData._id);
+      const response = await getUserNotifications(userData._id);
+      
+      if (response.success) {
+        setNotifications(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      Alert.alert('خطأ', 'فشل في تحميل الإشعارات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: string) => {
+    Alert.alert(
+      'حذف الإشعار',
+      'هل أنت متأكد من حذف هذا الإشعار؟',
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'حذف',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteNotification(notificationId, userId);
+              setNotifications(prev => prev.filter(n => n._id !== notificationId));
+              console.log('✅ Notification deleted successfully');
+            } catch (error) {
+              console.error('Error deleting notification:', error);
+              Alert.alert('خطأ', 'فشل في حذف الإشعار');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'الآن';
+    if (diffInMinutes < 60) return `منذ ${diffInMinutes} دقيقة`;
+    if (diffInMinutes < 1440) return `منذ ${Math.floor(diffInMinutes / 60)} ساعة`;
+    return `منذ ${Math.floor(diffInMinutes / 1440)} يوم`;
+  };
+
+  const renderNotificationItem = ({ item }: { item: Notification }) => (
+    <View style={[styles.notificationItem, !item.isRead && styles.unreadNotification]}>
+      <TouchableOpacity 
+        style={styles.deleteButton}
+        onPress={() => handleDeleteNotification(item._id)}
+      >
+        <FontAwesome5 name="times" size={16} color="#FF0000" />
+      </TouchableOpacity>
+      
+      <View style={styles.notificationContent}>
+        <Text style={styles.notificationTitle}>{item.title}</Text>
+        <Text style={styles.notificationText}>{item.message}</Text>
+        <Text style={styles.notificationTime}>{formatTime(item.createdAt)}</Text>
+      </View>
+      
+      <View style={styles.notificationIcon}>
+        <FontAwesome5 
+          name={item.type === 'welcome' ? 'hand-peace' : 'bell'} 
+          size={20} 
+          color={Colors.primary} 
+        />
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
-
       {/* Green Header Navigation Bar */}
       <View style={styles.navBar}>
         <LinearGradient
@@ -26,27 +157,36 @@ const Notifications: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        <Text style={styles.headerTitle}>الاشعارات</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.push('/(tabs)/settings')}
-        >
-          <MaterialIcons name="arrow-right" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Notifications Content */}
-      <View style={styles.content}>
-        <View style={styles.centerContent}>
-          <View style={styles.iconCircle}>
-            <MaterialIcons name="notifications-none" size={48} color="#BDBDBD" />
+        <View style={styles.navContent}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => router.push('/(tabs)/settings')}
+          >
+            <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>الإشعارات</Text>
           </View>
-          <Text style={styles.noNotifications}>لا يوجد اي اشعارات</Text>
         </View>
       </View>
+
+      {/* Notifications List */}
+      <FlatList
+        data={notifications}
+        renderItem={renderNotificationItem}
+        keyExtractor={(item) => item._id}
+        style={styles.notificationsList}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <FontAwesome5 name="bell-slash" size={50} color="#CCCCCC" />
+            <Text style={styles.emptyText}>لا توجد إشعارات</Text>
+          </View>
+        }
+      />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -54,12 +194,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 30,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -67,40 +204,92 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: -1,
   },
+  navContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    right: 0,
+    padding: 8,
+    zIndex: 1,
+    top: 0,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  notificationsList: {
     flex: 1,
   },
-  backButton: {
-    padding: 8,
+  notificationItem: {
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
   },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  centerContent: {
-    flex: 1,
+  notificationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
   },
-  iconCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#F2F2F2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 18,
+  notificationContent: {
+    flex: 1,
   },
-  noNotifications: {
+  notificationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+    color: '#333333',
+    textAlign: 'right',
+  },
+  notificationText: {
     fontSize: 14,
-    color: '#888',
-    marginTop: 8,
+    color: '#666666',
+    marginBottom: 4,
+    textAlign: 'right',
+  },
+  notificationTime: {
+    fontSize: 12,
+    color: '#999999',
+    textAlign: 'right',
+  },
+  unreadNotification: {
+    backgroundColor: '#F0F8FF',
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 1,
+    padding: 4,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 100,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#CCCCCC',
+    marginTop: 16,
     textAlign: 'center',
   },
-});
-
-export default Notifications; 
+}); 

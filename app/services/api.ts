@@ -135,4 +135,58 @@ export const checkPhoneExists = async (phone: string) => {
   return response.data;
 };
 
+// Notification API functions
+export const getUserNotifications = async (userId: string) => {
+  try {
+    const response = await api.get(`/notifications/user/${userId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const deleteNotification = async (notificationId: string, userId: string) => {
+  try {
+    const response = await api.delete(`/notifications/${notificationId}`, {
+      data: { userId }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const markNotificationAsRead = async (notificationId: string, userId: string) => {
+  try {
+    const response = await api.put(`/notifications/read/${notificationId}`, { userId });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const getNotificationCount = async (userId: string) => {
+  try {
+    const response = await api.get(`/notifications/count/${userId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+// Location API functions
+export const updateUserLocation = async (userId: string, locationData: {
+  latitude: number;
+  longitude: number;
+  address: string;
+  city: string;
+}) => {
+  try {
+    const response = await api.put(`/auth/update-location/${userId}`, locationData);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 export default api; 
