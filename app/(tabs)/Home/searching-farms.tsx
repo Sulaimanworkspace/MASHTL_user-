@@ -3,24 +3,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { createServiceOrder, getUserData } from '../../services/api';
+import { createServiceOrder, getUserData, cancelServiceOrder } from '../../services/api';
 
 export default function SearchingFarmsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [showModal, setShowModal] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
 
   // Animated dots
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
 
-  // Create service order when component mounts
+  // Create service order when component mounts (only once)
   useEffect(() => {
+    if (orderCreated) return; // Don't create if already created
+    
     const createOrder = async () => {
-      if (orderCreated) return;
-      
       try {
         const userData = await getUserData();
         if (!userData) {
@@ -51,6 +52,7 @@ export default function SearchingFarmsScreen() {
         const response = await createServiceOrder(orderData);
         console.log('✅ Service order created successfully:', response);
         setOrderCreated(true);
+        setCreatedOrderId(response.data?._id || null);
         
       } catch (error) {
         console.error('💥 Error creating service order:', error);
@@ -58,7 +60,7 @@ export default function SearchingFarmsScreen() {
     };
 
     createOrder();
-  }, [params, orderCreated]);
+  }, [orderCreated]);
 
   React.useEffect(() => {
     Animated.loop(
@@ -119,7 +121,20 @@ export default function SearchingFarmsScreen() {
               <TouchableOpacity style={styles.modalButton} onPress={() => setShowModal(false)}>
                 <Text style={styles.modalButtonText}>إلغاء</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#FF3B30' }]} onPress={() => { setShowModal(false); router.back(); }}>
+              <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#FF3B30' }]} onPress={async () => {
+                setShowModal(false);
+                // Cancel the order if it was created
+                if (createdOrderId) {
+                  try {
+                    console.log('🚫 Cancelling order:', createdOrderId);
+                    await cancelServiceOrder(createdOrderId);
+                    console.log('✅ Order cancelled successfully');
+                  } catch (error) {
+                    console.error('💥 Error cancelling order:', error);
+                  }
+                }
+                router.back();
+              }}>
                 <Text style={[styles.modalButtonText, { color: '#fff' }]}>تأكيد</Text>
               </TouchableOpacity>
             </View>

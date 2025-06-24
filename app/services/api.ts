@@ -237,4 +237,15 @@ export const getUserServiceOrders = async () => {
   }
 };
 
+export const cancelServiceOrder = async (orderId: string) => {
+  try {
+    const response = await api.put(`/service-orders/${orderId}/status`, {
+      status: 'cancelled'
+    });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 export default api; 
