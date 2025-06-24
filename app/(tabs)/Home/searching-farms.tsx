@@ -1,17 +1,64 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import React, { useRef, useState, useEffect } from 'react';
 import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { createServiceOrder, getUserData } from '../../services/api';
 
 export default function SearchingFarmsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [showModal, setShowModal] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
 
   // Animated dots
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
+
+  // Create service order when component mounts
+  useEffect(() => {
+    const createOrder = async () => {
+      if (orderCreated) return;
+      
+      try {
+        const userData = await getUserData();
+        if (!userData) {
+          console.error('No user data found');
+          return;
+        }
+
+        // Get service details from params or use defaults
+        const serviceType = (params.projectName as string) || 'تنسيق الحدائق';
+        const description = (params.description as string) || 'خدمة تصميم وتنفيذ الحدائق المنزلية';
+        
+        const orderData = {
+          serviceType,
+          serviceTitle: serviceType,
+          description,
+          location: {
+            address: 'الرياض حي الزهرة, الرياض',
+            city: 'الرياض',
+            coordinates: {
+              latitude: 24.7136,
+              longitude: 46.6753
+            }
+          },
+          notes: 'طلب جديد من التطبيق'
+        };
+
+        console.log('🔄 Creating service order:', orderData);
+        const response = await createServiceOrder(orderData);
+        console.log('✅ Service order created successfully:', response);
+        setOrderCreated(true);
+        
+      } catch (error) {
+        console.error('💥 Error creating service order:', error);
+      }
+    };
+
+    createOrder();
+  }, [params, orderCreated]);
 
   React.useEffect(() => {
     Animated.loop(

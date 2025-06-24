@@ -42,11 +42,26 @@ const api = axios.create({
   },
 });
 
-// Add request/response interceptors for debugging
+// Add request/response interceptors for debugging and authentication
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     console.log('🚀 API Request:', config.method?.toUpperCase(), (config.baseURL || '') + (config.url || ''));
     console.log('📦 Request data:', config.data);
+    
+    // Add authentication token if available
+    try {
+      const userData = await AsyncStorage.getItem('user_data');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.token) {
+          config.headers.Authorization = `Bearer ${user.token}`;
+          console.log('🔐 Added auth token to request');
+        }
+      }
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+    }
+    
     return config;
   },
   (error) => {
@@ -183,6 +198,39 @@ export const updateUserLocation = async (userId: string, locationData: {
 }) => {
   try {
     const response = await api.put(`/auth/update-location/${userId}`, locationData);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+// Service Order API functions
+export const createServiceOrder = async (orderData: {
+  serviceType: string;
+  serviceTitle: string;
+  description?: string;
+  location: {
+    address: string;
+    city?: string;
+    coordinates?: {
+      latitude?: number;
+      longitude?: number;
+    };
+  };
+  notes?: string;
+  images?: string[];
+}) => {
+  try {
+    const response = await api.post('/service-orders', orderData);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const getUserServiceOrders = async () => {
+  try {
+    const response = await api.get('/service-orders/my-orders');
     return response.data;
   } catch (error: any) {
     throw error;

@@ -132,8 +132,8 @@ export default function LoginScreen() {
       
       // Get user data after successful login verification
       const loginResult = await login(fullPhone, password);
-      if (loginResult.success && loginResult.data) {
-        await storeUserData(loginResult.data);
+      if (loginResult.success && loginResult.user) {
+        await storeUserData(loginResult.user);
       }
       
       // Success - navigate to home
