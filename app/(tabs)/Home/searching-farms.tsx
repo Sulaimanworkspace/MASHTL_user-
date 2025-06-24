@@ -1,6 +1,6 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { createServiceOrder, getUserData, cancelServiceOrder } from '../../services/api';
@@ -17,50 +17,72 @@ export default function SearchingFarmsScreen() {
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
 
-  // Create service order when component mounts (only once)
-  useEffect(() => {
-    if (orderCreated) return; // Don't create if already created
-    
-    const createOrder = async () => {
-      try {
-        const userData = await getUserData();
-        if (!userData) {
-          console.error('No user data found');
-          return;
+  // Create service order when screen is focused (fresh each time)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Screen focused - resetting state and creating new order');
+      
+      // Reset state completely on each focus
+      setOrderCreated(false);
+      setCreatedOrderId(null);
+      setShowModal(false);
+      
+      const createOrder = async () => {
+        try {
+          const userData = await getUserData();
+          if (!userData) {
+            console.error('❌ No user data found');
+            return;
+          }
+
+          // Get service details from params or use defaults
+          const serviceType = (params.projectName as string) || 'تنسيق الحدائق';
+          const description = (params.description as string) || 'خدمة تصميم وتنفيذ الحدائق المنزلية';
+          
+          const orderData = {
+            serviceType,
+            serviceTitle: serviceType,
+            description,
+            location: {
+              address: 'الرياض حي الزهرة, الرياض',
+              city: 'الرياض',
+              coordinates: {
+                latitude: 24.7136,
+                longitude: 46.6753
+              }
+            },
+            notes: 'طلب جديد من التطبيق'
+          };
+
+          console.log('🔄 Creating fresh service order:', orderData);
+          const response = await createServiceOrder(orderData);
+          console.log('✅ Service order created successfully:', response);
+          
+          if (response && response.data && response.data._id) {
+            setOrderCreated(true);
+            setCreatedOrderId(response.data._id);
+            console.log('📝 New order ID stored:', response.data._id);
+          } else {
+            console.error('❌ Invalid response from createServiceOrder:', response);
+          }
+          
+        } catch (error) {
+          console.error('💥 Error creating service order:', error);
+          // Reset state on error to allow retry
+          setOrderCreated(false);
+          setCreatedOrderId(null);
         }
+      };
 
-        // Get service details from params or use defaults
-        const serviceType = (params.projectName as string) || 'تنسيق الحدائق';
-        const description = (params.description as string) || 'خدمة تصميم وتنفيذ الحدائق المنزلية';
-        
-        const orderData = {
-          serviceType,
-          serviceTitle: serviceType,
-          description,
-          location: {
-            address: 'الرياض حي الزهرة, الرياض',
-            city: 'الرياض',
-            coordinates: {
-              latitude: 24.7136,
-              longitude: 46.6753
-            }
-          },
-          notes: 'طلب جديد من التطبيق'
-        };
-
-        console.log('🔄 Creating service order:', orderData);
-        const response = await createServiceOrder(orderData);
-        console.log('✅ Service order created successfully:', response);
-        setOrderCreated(true);
-        setCreatedOrderId(response.data?._id || null);
-        
-      } catch (error) {
-        console.error('💥 Error creating service order:', error);
-      }
-    };
-
-    createOrder();
-  }, [orderCreated]);
+      // Create order after a small delay to ensure state is reset
+      const timer = setTimeout(createOrder, 200);
+      
+      // Cleanup function
+      return () => {
+        clearTimeout(timer);
+      };
+    }, [params.projectName, params.description]) // Depend on params to recreate when they change
+  );
 
   React.useEffect(() => {
     Animated.loop(
@@ -126,12 +148,25 @@ export default function SearchingFarmsScreen() {
                 // Cancel the order if it was created
                 if (createdOrderId) {
                   try {
-                    console.log('🚫 Cancelling order:', createdOrderId);
+                    console.log('🚫 Attempting to cancel order:', createdOrderId);
                     await cancelServiceOrder(createdOrderId);
                     console.log('✅ Order cancelled successfully');
-                  } catch (error) {
+                  } catch (error: any) {
                     console.error('💥 Error cancelling order:', error);
+                    if (error.response?.status === 404) {
+                      console.log('ℹ️ Order not found (likely already processed) - continuing');
+                    } else if (error.response?.status === 403) {
+                      console.log('ℹ️ Authorization error (order may belong to different user) - continuing');
+                    } else {
+                      console.log('⚠️ Other error occurred - continuing anyway');
+                    }
+                    // Don't block navigation regardless of error type
                   }
+                  // Reset the order ID after cancel attempt
+                  setCreatedOrderId(null);
+                  setOrderCreated(false);
+                } else {
+                  console.log('ℹ️ No order to cancel');
                 }
                 router.back();
               }}>
