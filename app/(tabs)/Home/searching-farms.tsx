@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { createServiceOrder, getUserData, cancelServiceOrder } from '../../services/api';
+import { createServiceOrder, getUserData, cancelServiceOrder, getUserNotifications, markNotificationAsRead } from '../../services/api';
 
 export default function SearchingFarmsScreen() {
   const router = useRouter();
@@ -11,11 +11,44 @@ export default function SearchingFarmsScreen() {
   const [showModal, setShowModal] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [currentNotification, setCurrentNotification] = useState<any>(null);
 
   // Animated dots
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
+
+  // Check for new notifications
+  const checkNotifications = async () => {
+    try {
+      const userData = await getUserData();
+      if (!userData || !userData._id) return;
+
+      console.log('🔔 [SearchingFarms] Checking notifications for user:', userData._id);
+      const response = await getUserNotifications(userData._id);
+      
+      if (response.success) {
+        console.log('🔔 [SearchingFarms] All notifications:', response.data);
+        
+        // Find unread order acceptance notifications
+        const unreadAcceptanceNotification = response.data.find(
+          (notification: any) => 
+            notification.type === 'order_accepted' && !notification.isRead
+        );
+
+        console.log('🔔 [SearchingFarms] Found unread acceptance notification:', unreadAcceptanceNotification);
+
+        if (unreadAcceptanceNotification) {
+          setCurrentNotification(unreadAcceptanceNotification);
+          setShowNotificationModal(true);
+          console.log('🔔 [SearchingFarms] Showing notification modal');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking notifications:', error);
+    }
+  };
 
   // Create service order when screen is focused (fresh each time)
   useFocusEffect(
@@ -103,6 +136,22 @@ export default function SearchingFarmsScreen() {
     ).start();
   }, []);
 
+  // Periodic notification checking
+  React.useEffect(() => {
+    // Check notifications immediately
+    checkNotifications();
+    
+    // Then check every 3 seconds while on this screen
+    const notificationInterval = setInterval(() => {
+      console.log('🔔 [SearchingFarms] Periodic notification check');
+      checkNotifications();
+    }, 3000);
+
+    return () => {
+      clearInterval(notificationInterval);
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
@@ -171,6 +220,61 @@ export default function SearchingFarmsScreen() {
                 router.back();
               }}>
                 <Text style={[styles.modalButtonText, { color: '#fff' }]}>تأكيد</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Notification Modal */}
+      <Modal
+        visible={showNotificationModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowNotificationModal(false)}
+      >
+        <View style={styles.notificationModalOverlay}>
+          <View style={styles.notificationModalContainer}>
+            <View style={styles.notificationModalContent}>
+              {/* Success Icon */}
+              <View style={styles.successIconContainer}>
+                <FontAwesome5 name="check-circle" size={50} color="#4CAF50" />
+              </View>
+              
+              {/* Title */}
+              <Text style={styles.notificationModalTitle}>
+                {currentNotification?.title || 'تم قبول طلبك'}
+              </Text>
+              
+              {/* Message */}
+              <Text style={styles.notificationModalMessage}>
+                {currentNotification?.message || 'تم قبول طلبك بنجاح من قبل المزارع'}
+              </Text>
+              
+              {/* OK Button */}
+              <TouchableOpacity
+                style={styles.notificationModalButton}
+                onPress={async () => {
+                  // Mark notification as read
+                  if (currentNotification) {
+                    try {
+                      const userData = await getUserData();
+                      if (userData && userData._id) {
+                        await markNotificationAsRead(currentNotification._id, userData._id);
+                      }
+                    } catch (error) {
+                      console.error('Error marking notification as read:', error);
+                    }
+                  }
+                  
+                  setShowNotificationModal(false);
+                  setCurrentNotification(null);
+                  
+                  // Navigate to orders page to see the accepted order
+                  router.push('/(tabs)/orders');
+                }}
+              >
+                <Text style={styles.notificationModalButtonText}>عرض الطلب</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -280,5 +384,60 @@ const styles = StyleSheet.create({
     color: '#222',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  // Notification Modal styles
+  notificationModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  notificationModalContainer: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+
+  notificationModalContent: {
+    padding: 24,
+    alignItems: 'center',
+  },
+
+  successIconContainer: {
+    marginBottom: 16,
+  },
+
+  notificationModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+
+  notificationModalMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+
+  notificationModalButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 25,
+    minWidth: 120,
+  },
+
+  notificationModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 }); 
