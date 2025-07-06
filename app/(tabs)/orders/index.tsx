@@ -192,7 +192,7 @@ const User17: React.FC = () => {
     if (diffInDays < 7) return `منذ ${diffInDays} يوم`;
     
     // For older than a week, show the actual date
-    return orderDate.toLocaleDateString('ar-SA');
+          return orderDate.toLocaleDateString('ar-SA', { calendar: 'gregory' });
   };
 
   // Don't render anything if not authenticated (prevents flash)

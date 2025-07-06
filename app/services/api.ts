@@ -248,4 +248,20 @@ export const cancelServiceOrder = async (orderId: string) => {
   }
 };
 
+// Wallet API functions
+export const getUserWallet = async () => {
+  try {
+    const userData = await getUserData();
+    if (!userData || !userData._id) {
+      throw new Error('User not authenticated');
+    }
+
+    const response = await api.get(`/wallets/${userData._id}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching wallet:', error);
+    throw error;
+  }
+};
+
 export default api; 

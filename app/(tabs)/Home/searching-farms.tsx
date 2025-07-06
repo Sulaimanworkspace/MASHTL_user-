@@ -30,6 +30,7 @@ export default function SearchingFarmsScreen() {
       
       if (response.success) {
         console.log('🔔 [SearchingFarms] All notifications:', response.data);
+        console.log('🔔 [SearchingFarms] Notification types found:', response.data.map((n: any) => ({ type: n.type, isRead: n.isRead, title: n.title })));
         
         // Find unread order acceptance notifications
         const unreadAcceptanceNotification = response.data.find(
@@ -37,12 +38,23 @@ export default function SearchingFarmsScreen() {
             notification.type === 'order_accepted' && !notification.isRead
         );
 
+        // Find unread order rejection notifications
+        const unreadRejectionNotification = response.data.find(
+          (notification: any) => 
+            notification.type === 'order_rejected' && !notification.isRead
+        );
+
         console.log('🔔 [SearchingFarms] Found unread acceptance notification:', unreadAcceptanceNotification);
+        console.log('🔔 [SearchingFarms] Found unread rejection notification:', unreadRejectionNotification);
 
         if (unreadAcceptanceNotification) {
           setCurrentNotification(unreadAcceptanceNotification);
           setShowNotificationModal(true);
-          console.log('🔔 [SearchingFarms] Showing notification modal');
+          console.log('🔔 [SearchingFarms] Showing acceptance notification modal');
+        } else if (unreadRejectionNotification) {
+          setCurrentNotification(unreadRejectionNotification);
+          setShowNotificationModal(true);
+          console.log('🔔 [SearchingFarms] Showing rejection notification modal');
         }
       }
     } catch (error) {
@@ -236,24 +248,31 @@ export default function SearchingFarmsScreen() {
         <View style={styles.notificationModalOverlay}>
           <View style={styles.notificationModalContainer}>
             <View style={styles.notificationModalContent}>
-              {/* Success Icon */}
+              {/* Icon - Different for acceptance vs rejection */}
               <View style={styles.successIconContainer}>
-                <FontAwesome5 name="check-circle" size={50} color="#4CAF50" />
+                <FontAwesome5 
+                  name={currentNotification?.type === 'order_rejected' ? "times-circle" : "check-circle"} 
+                  size={50} 
+                  color={currentNotification?.type === 'order_rejected' ? "#FF3B30" : "#4CAF50"} 
+                />
               </View>
               
               {/* Title */}
               <Text style={styles.notificationModalTitle}>
-                {currentNotification?.title || 'تم قبول طلبك'}
+                {currentNotification?.title || (currentNotification?.type === 'order_rejected' ? 'تم رفض طلبك' : 'تم قبول طلبك')}
               </Text>
               
               {/* Message */}
               <Text style={styles.notificationModalMessage}>
-                {currentNotification?.message || 'تم قبول طلبك بنجاح من قبل المزارع'}
+                {currentNotification?.message || (currentNotification?.type === 'order_rejected' ? 'تم رفض طلبك من قبل المزارع' : 'تم قبول طلبك بنجاح من قبل المزارع')}
               </Text>
               
               {/* OK Button */}
               <TouchableOpacity
-                style={styles.notificationModalButton}
+                style={[
+                  styles.notificationModalButton,
+                  { backgroundColor: currentNotification?.type === 'order_rejected' ? '#FF3B30' : '#4CAF50' }
+                ]}
                 onPress={async () => {
                   // Mark notification as read
                   if (currentNotification) {
@@ -270,7 +289,7 @@ export default function SearchingFarmsScreen() {
                   setShowNotificationModal(false);
                   setCurrentNotification(null);
                   
-                  // Navigate to orders page to see the accepted order
+                  // Navigate to orders page to see the order
                   router.push('/(tabs)/orders');
                 }}
               >

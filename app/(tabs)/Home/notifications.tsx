@@ -125,9 +125,15 @@ export default function NotificationsScreen() {
       
       <View style={styles.notificationIcon}>
         <FontAwesome5 
-          name={item.type === 'welcome' ? 'hand-peace' : 'bell'} 
+          name={
+            item.type === 'welcome' ? 'hand-peace' : 
+            item.type === 'wallet' ? 'wallet' : 
+            'bell'
+          } 
           size={20} 
-          color={Colors.primary} 
+          color={
+            item.type === 'wallet' ? '#FF6B35' : Colors.primary
+          } 
         />
       </View>
     </View>
