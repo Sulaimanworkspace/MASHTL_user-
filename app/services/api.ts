@@ -3,13 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // List of possible API URLs to try
 const POSSIBLE_URLS = [
-  'http://172.20.10.3:9090/api',     // Your actual computer IP (found via ipconfig)
+  'http://172.20.10.12:9090/api',   // Your Mac's IP address
   'http://10.0.2.2:9090/api',        // Android Emulator
   'http://localhost:9090/api',       // iOS Simulator
   'http://127.0.0.1:9090/api',      // iOS Simulator alternative
   'http://192.168.1.100:9090/api',  // Common local network IP
   'http://192.168.0.100:9090/api',  // Alternative local network IP
-  'http://172.20.166.176:9090/api', // Your previous working IP
 ];
 
 let API_BASE_URL = POSSIBLE_URLS[0]; // Start with Android Emulator

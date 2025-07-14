@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StatusBar,
   Platform,
+  Alert,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useRouter } from 'expo-router';
@@ -14,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { updateUserLocation, getUserData, storeUserData } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 
 export default function MapPicker() {
   const router = useRouter();
@@ -24,129 +26,82 @@ export default function MapPicker() {
     address: 'الرياض, المملكة العربية السعودية',
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [mapLoading, setMapLoading] = useState(true);
+  const [locationPermission, setLocationPermission] = useState(false);
+
+  // Remove auto-request on mount, only use button
+  // useEffect(() => {
+  //   requestLocationPermission();
+  // }, []);
+
+  const requestLocationPermission = async () => {
+    try {
+      console.log('🔍 Requesting location permission...');
+      
+      // Request permission - this will show the Apple default modal
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status === 'granted') {
+        console.log('✅ Location permission granted');
+        setLocationPermission(true);
+        
+        // Get current location
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        
+        console.log('📍 Current location:', location.coords);
+        
+        // Update the map with current location
+        if (webViewRef.current) {
+          webViewRef.current.postMessage(JSON.stringify({
+            type: 'SET_CURRENT_LOCATION',
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          }));
+        }
+      } else {
+        console.log('❌ Location permission denied');
+        setLocationPermission(false);
+        Alert.alert(
+          'إذن الموقع',
+          'نحتاج إلى إذن الموقع لعرض موقعك على الخريطة',
+          [
+            { text: 'إلغاء', style: 'cancel' },
+            { text: 'إعادة المحاولة', onPress: requestLocationPermission }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+      Alert.alert('خطأ', 'حدث خطأ في الوصول إلى الموقع');
+    }
+  };
 
   // Using OpenStreetMap with current location and user pin
   const mapHTML = `
     <!DOCTYPE html>
     <html>
-          <head>
+      <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <style>
-        body, html { 
-          margin: 0; 
-          padding: 0; 
-          height: 100%; 
-          font-family: Arial, sans-serif;
-          direction: rtl;
-        }
-        #map { 
-          height: 100vh; 
-          width: 100%; 
-          touch-action: manipulation;
-        }
-        .info-card {
-          position: absolute;
-          top: 20px;
-          left: 20px;
-          right: 20px;
-          background: white;
-          padding: 15px;
-          border-radius: 10px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          z-index: 1000;
-          text-align: right;
-        }
-        .info-title {
-          font-weight: bold;
-          color: #333;
-          margin-bottom: 5px;
-          font-size: 14px;
-        }
-        .info-address {
-          color: #666;
-          font-size: 13px;
-        }
-        .location-btn {
-          position: absolute;
-          bottom: 100px;
-          right: 20px;
-          width: 50px;
-          height: 50px;
-          background: #2E8B57;
-          border: none;
-          border-radius: 25px;
-          color: white;
-          font-size: 18px;
-          cursor: pointer;
-          box-shadow: 0 2px 10px rgba(46, 139, 87, 0.3);
-          z-index: 1000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .confirm-btn {
-          position: absolute;
-          bottom: 30px;
-          left: 20px;
-          right: 20px;
-          background: #2E8B57;
-          color: white;
-          border: none;
-          padding: 15px;
-          border-radius: 25px;
-          font-size: 16px;
-          font-weight: bold;
-          cursor: pointer;
-          z-index: 1000;
-        }
-        .loading {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: white;
-          padding: 20px;
-          border-radius: 10px;
-          text-align: center;
-          z-index: 2000;
-        }
-        /* Custom marker styles */
-        .user-marker {
-          background-color: #2196F3;
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        .selected-marker {
-          background-color: #4CAF50;
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; direction: rtl; }
+        #map { height: 100vh; width: 100%; touch-action: manipulation; }
+        .info-card { position: absolute; top: 20px; left: 20px; right: 20px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; text-align: right; }
+        .info-title { font-weight: bold; color: #333; margin-bottom: 5px; font-size: 14px; }
+        .info-address { color: #666; font-size: 13px; }
+        .confirm-btn { position: absolute; bottom: 30px; left: 20px; right: 20px; background: #2E8B57; color: white; border: none; padding: 15px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; z-index: 1000; }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; text-align: center; z-index: 2000; }
+        .user-marker { background-color: #2196F3; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .selected-marker { background-color: #4CAF50; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.3; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } }
       </style>
     </head>
     <body>
-      <div id="loading" class="loading">
-        <div>جاري تحميل الخريطة...</div>
-      </div>
-      
-      <div class="info-card">
-        <div class="info-title">الموقع المحدد:</div>
-        <div class="info-address" id="address">اضغط على الخريطة لتحديد الموقع</div>
-      </div>
-      
-      <button class="location-btn" onclick="getCurrentLocation()" title="موقعي الحالي">📍</button>
-      
+      <div id="loading" class="loading"><div>جاري تحميل الخريطة...</div></div>
+      <div class="info-card"><div class="info-title">الموقع المحدد:</div><div class="info-address" id="address">اضغط على الخريطة لتحديد الموقع</div></div>
       <div id="map"></div>
-      
       <button class="confirm-btn" onclick="confirmLocation()">تأكيد الموقع</button>
-
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
       <script>
         let map;
@@ -156,177 +111,56 @@ export default function MapPicker() {
         let currentLng = 46.6753;
         let currentAddress = "اضغط على الخريطة لتحديد الموقع";
         let locationSelected = false;
-        let userLat = null;
-        let userLng = null;
-
-        function hideLoading() {
-          const loading = document.getElementById('loading');
-          if (loading) {
-            loading.style.display = 'none';
-          }
-        }
-
-        function updateAddress(address) {
-          document.getElementById('address').textContent = address;
-          currentAddress = address;
-        }
-
+        function hideLoading() { const loading = document.getElementById('loading'); if (loading) { loading.style.display = 'none'; } }
+        function updateAddress(address) { document.getElementById('address').textContent = address; currentAddress = address; }
         function initMap() {
           try {
             hideLoading();
-            
-            // Initialize Leaflet map
-            map = L.map('map').setView([currentLat, currentLng], 12);
-            
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '© OpenStreetMap contributors',
-              maxZoom: 19
-            }).addTo(map);
-
-            // Handle map clicks - create or move selected marker
-            map.on('click', function(e) {
-              updateSelectedLocation(e.latlng.lat, e.latlng.lng);
-            });
-            
-          } catch (error) {
-            console.error('Map initialization error:', error);
-            document.getElementById('loading').innerHTML = '<div>خطأ في تحميل الخريطة</div>';
-          }
+            map = L.map('map', { zoomControl: true, scrollWheelZoom: true, doubleClickZoom: true, boxZoom: false, keyboard: false, dragging: true, touchZoom: true, tap: true }).setView([currentLat, currentLng], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19, minZoom: 8, updateWhenIdle: true, updateWhenZooming: false }).addTo(map);
+            map.on('click', function(e) { updateSelectedLocation(e.latlng.lat, e.latlng.lng); });
+          } catch (error) { console.error('Map initialization error:', error); document.getElementById('loading').innerHTML = '<div>خطأ في تحميل الخريطة</div>'; }
         }
-
         function updateSelectedLocation(lat, lng) {
-          currentLat = lat;
-          currentLng = lng;
-          locationSelected = true;
-          
-          // Remove existing selected marker if any
-          if (selectedMarker) {
-            map.removeLayer(selectedMarker);
-          }
-          
-          // Create selected location marker icon (green)
-          const selectedIcon = L.divIcon({
-            className: 'selected-marker',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-          });
-          
-          // Add new selected marker
-          selectedMarker = L.marker([lat, lng], {
-            icon: selectedIcon,
-            draggable: true
-          }).addTo(map);
-          
-          // Handle marker drag
-          selectedMarker.on('dragend', function(e) {
-            const position = e.target.getLatLng();
-            updateSelectedLocation(position.lat, position.lng);
-          });
-          
-          // Get address for this location
+          currentLat = lat; currentLng = lng; locationSelected = true;
+          if (selectedMarker) { map.removeLayer(selectedMarker); }
+          const selectedIcon = L.divIcon({ className: 'selected-marker', iconSize: [30, 30], iconAnchor: [15, 15] });
+          selectedMarker = L.marker([lat, lng], { icon: selectedIcon, draggable: true }).addTo(map);
+          selectedMarker.on('dragend', function(e) { const position = e.target.getLatLng(); updateSelectedLocation(position.lat, position.lng); });
           reverseGeocode(lat, lng);
         }
-
         function showUserLocation(lat, lng) {
-          userLat = lat;
-          userLng = lng;
-          
-          // Remove existing user location marker if any
-          if (userLocationMarker) {
-            map.removeLayer(userLocationMarker);
-          }
-          
-          // Create user location marker icon (blue)
-          const userIcon = L.divIcon({
-            className: 'user-marker',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15],
-            html: '<div style="width:25px;height:25px;background:#2196F3;border:3px solid white;border-radius:50%;box-shadow:0 2px 10px rgba(33,150,243,0.5);display:flex;align-items:center;justify-content:center;font-size:12px;">📍</div>'
-          });
-          
-          // Add user location marker
-          userLocationMarker = L.marker([lat, lng], {
-            icon: userIcon,
-            draggable: false
-          }).addTo(map);
-          
-          // Center map on user location
-          map.setView([lat, lng], 15);
-          
+          if (userLocationMarker) { map.removeLayer(userLocationMarker); }
+          const userIcon = L.divIcon({ className: 'user-marker', iconSize: [32, 32], iconAnchor: [16, 32], html: '<div style="width:32px;height:32px;position:relative;"><svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="#2196F3" stroke="white" stroke-width="2"/><circle cx="16" cy="16" r="4" fill="white"/><circle cx="16" cy="16" r="2" fill="#2196F3"/></svg><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border:2px solid rgba(33,150,243,0.3);border-radius:50%;animation:pulse 1.5s infinite;"></div></div>' });
+          userLocationMarker = L.marker([lat, lng], { icon: userIcon, draggable: false }).addTo(map);
+          map.flyTo([lat, lng], 16, { duration: 0.8, easeLinearity: 0.25 });
           console.log('User location marker added at:', lat, lng);
         }
-
         function reverseGeocode(lat, lng) {
           try {
-            // Using Nominatim for reverse geocoding (free)
             fetch(\`https://nominatim.openstreetmap.org/reverse?format=json&lat=\${lat}&lon=\${lng}&accept-language=ar\`)
               .then(response => response.json())
-              .then(data => {
-                if (data && data.display_name) {
-                  updateAddress(data.display_name);
-                } else {
-                  updateAddress('موقع محدد على الخريطة');
-                }
-              })
-              .catch(error => {
-                console.error('Geocoding error:', error);
-                updateAddress('موقع محدد على الخريطة');
-              });
-          } catch (error) {
-            updateAddress('موقع محدد على الخريطة');
-          }
+              .then(data => { if (data && data.display_name) { updateAddress(data.display_name); } else { updateAddress('موقع محدد على الخريطة'); } })
+              .catch(error => { console.error('Geocoding error:', error); updateAddress('موقع محدد على الخريطة'); });
+          } catch (error) { updateAddress('موقع محدد على الخريطة'); }
         }
-
-        function           getCurrentLocation() {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              function(position) {
-                console.log('Got user location:', position.coords.latitude, position.coords.longitude);
-                showUserLocation(position.coords.latitude, position.coords.longitude);
-              }, 
-              function(error) {
-                console.log('Location access denied or unavailable:', error);
-              },
-              {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 300000
-              }
-            );
-          } else {
-            console.log('Geolocation not supported');
-          }
-        }
-
+        function setLocationFromNative(lat, lng) { showUserLocation(lat, lng); }
         function confirmLocation() {
-          if (!locationSelected) {
-            // Don't show popup, just return
-            return;
-          }
-          
+          if (!locationSelected) { return; }
           try {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'LOCATION_SELECTED',
-              latitude: currentLat,
-              longitude: currentLng,
-              address: currentAddress
-            }));
-          } catch (error) {
-            console.error('Error sending message:', error);
-          }
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'LOCATION_SELECTED', latitude: currentLat, longitude: currentLng, address: currentAddress }));
+          } catch (error) { console.error('Error sending message:', error); }
         }
-
-        // Initialize map when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-          initMap();
+        document.addEventListener('DOMContentLoaded', function() { initMap(); });
+        window.addEventListener('message', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'SET_CURRENT_LOCATION') {
+              setLocationFromNative(data.latitude, data.longitude);
+            }
+          } catch (error) { console.error('Error parsing message:', error); }
         });
-
-        // Set up global error handler
-        window.onerror = function(msg, url, line, col, error) {
-          console.error('JavaScript error:', msg, url, line, col, error);
-          return false;
-        };
+        window.onerror = function(msg, url, line, col, error) { console.error('JavaScript error:', msg, url, line, col, error); return false; };
       </script>
     </body>
     </html>
@@ -370,7 +204,7 @@ export default function MapPicker() {
           
           setIsLoading(false);
           router.back();
-        } else {
+                } else {
           setIsLoading(false);
           router.back();
         }
@@ -418,9 +252,7 @@ export default function MapPicker() {
           onError={handleWebViewError}
           javaScriptEnabled={true}
           domStorageEnabled={true}
-          startInLoadingState={true}
-          onLoadStart={() => setMapLoading(true)}
-          onLoadEnd={() => setMapLoading(false)}
+          startInLoadingState={false}
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}
           mixedContentMode="compatibility"
@@ -437,6 +269,14 @@ export default function MapPicker() {
             </View>
           )}
         />
+        {/* Floating Red Waypoint Button */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={requestLocationPermission}
+          activeOpacity={0.8}
+        >
+          <FontAwesome5 name="location-arrow" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       {/* Loading Overlay */}
@@ -474,6 +314,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+  },
+  locationButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginRight: 10,
   },
   headerTitle: {
     color: '#fff',
@@ -534,5 +380,22 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     fontWeight: '600',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 96, // 30 (submit) + 56 (button height) + 10 (gap)
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#E53935', // Red
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    zIndex: 1001,
   },
 }); 
