@@ -95,7 +95,7 @@ export default function ServiceDetailsScreen() {
           <Text style={styles.sectionTitle}>ما تشمله الخدمة</Text>
           {features.map((feature, idx) => (
             <View key={idx} style={styles.featureRow}>
-              <FontAwesome5 name="circle" size={10} color="#4CAF50" style={{ marginLeft: 6 }} />
+              <FontAwesome5 name="circle" size={10} color="#4CAF50" style={{ marginLeft: 6 }} solid />
               <Text style={styles.featureText}>{feature}</Text>
             </View>
           ))}

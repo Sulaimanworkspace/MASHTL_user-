@@ -11,7 +11,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { getUserData, getNotificationCount } from '../../services/api';
+import { getUserData, getNotificationCount, getServices } from '../../services/api';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 import LocationPickerModal from '../../components/LocationPickerModal';
@@ -50,13 +50,16 @@ const TabItem: React.FC<TabItemProps> = ({ imageUri, title, isActive = false, on
   </TouchableOpacity>
 );
 
-type ServiceType = 'landscaping' | 'tree-planting' | 'projects' | 'grass-planting';
-
 interface ServiceData {
-  id: string;
-  name: string;
+  _id: string;
+  title: string;
   image: string;
   description: string;
+  serviceType: string;
+  features: string[];
+  rating: number;
+  isActive: boolean;
+  order: number;
 }
 
 const User4: React.FC = () => {
@@ -66,11 +69,78 @@ const User4: React.FC = () => {
   const [userLocation, setUserLocation] = useState('اختر موقعك');
   const [notificationCount, setNotificationCount] = useState(0);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [services, setServices] = useState<ServiceData[]>([]);
+  const [isNetworkConnected, setIsNetworkConnected] = useState(true);
 
   // Debug: Log notification count changes
   useEffect(() => {
     console.log('🔴 Notification count changed to:', notificationCount);
   }, [notificationCount]);
+
+  // Load services on component mount
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const response = await getServices();
+        if (response.success) {
+          // Add the hardcoded المشاريع service to the dynamic services
+          const projectsService: ServiceData = {
+            _id: 'projects-hardcoded',
+            title: 'المشاريع',
+            description: 'تنفيذ المشاريع الزراعية الكبيرة والصغيرة مع فريق متخصص. نقدم حلول متكاملة للمشاريع الزراعية مع ضمان الجودة والالتزام بالمواعيد.',
+            image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true',
+            serviceType: 'المشاريع',
+            features: ['تخطيط المشروع.', 'تنفيذ بفريق متخصص.', 'ضمان الجودة.', 'التزام بالمواعيد.'],
+            rating: 4.2,
+            isActive: true,
+            order: 4
+          };
+          
+          // Combine dynamic services with hardcoded المشاريع
+          const allServices = [...response.data, projectsService];
+          
+          // Sort by order
+          allServices.sort((a, b) => a.order - b.order);
+          
+          setServices(allServices);
+          setIsNetworkConnected(true);
+        } else {
+          // If API response is not successful, don't show any services
+          setServices([]);
+          setIsNetworkConnected(false);
+        }
+      } catch (error) {
+        console.error('Error loading services:', error);
+        // If API fails due to network issues, don't show any services
+        setServices([]);
+        setIsNetworkConnected(false);
+      }
+    };
+    loadServices();
+  }, []);
+
+  // Check network connectivity when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const checkNetworkConnectivity = async () => {
+        try {
+          const response = await getServices();
+          if (response.success) {
+            setIsNetworkConnected(true);
+          } else {
+            setIsNetworkConnected(false);
+            setServices([]);
+          }
+        } catch (error) {
+          console.error('Network connectivity check failed:', error);
+          setIsNetworkConnected(false);
+          setServices([]);
+        }
+      };
+
+      checkNetworkConnectivity();
+    }, [])
+  );
 
   // Load user data every time screen is focused (including after auth)
   useFocusEffect(
@@ -160,57 +230,27 @@ const User4: React.FC = () => {
     "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/93029b0fe0d878c1b88db46f2f108f549ea83b58?placeholderIfAbsent=true&theme=light"
   ];
 
-  const handleServicePress = (serviceType: ServiceType) => {
-    const serviceData: Record<ServiceType, ServiceData> = {
-      'landscaping': {
-        id: '1',
-        name: 'تنسيق الحدائق',
-        image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/9db5513cffa0f952bf72289940508e6bb2f43e86?placeholderIfAbsent=true',
-        description: 'خدمة تنسيق الحدائق المنزلية والشركات بأحدث التصاميم والأساليب الحديثة. نقوم بتصميم وتنفيذ جميع أنواع الحدائق مع ضمان جودة العمل والمواد المستخدمة.'
-      },
-      'tree-planting': {
-        id: '2',
-        name: 'زراعة الأشجار',
-        image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/4f68288a8dfbd3be84b86a86f69f10b478b30bb2?placeholderIfAbsent=true',
-        description: 'خدمة زراعة الأشجار بأنواعها المختلفة مع توفير الرعاية اللازمة. نقوم باختيار أفضل أنواع الأشجار المناسبة للمناخ والتربة مع ضمان نجاح الزراعة.'
-      },
-      'projects': {
-        id: '3',
-        name: 'المشاريع',
-        image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true',
-        description: 'تنفيذ المشاريع الزراعية الكبيرة والصغيرة مع فريق متخصص. نقدم حلول متكاملة للمشاريع الزراعية مع ضمان الجودة والالتزام بالمواعيد.'
-      },
-      'grass-planting': {
-        id: '4',
-        name: 'زراعة ثيل',
-        image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/46f551cf45a05c4bbd3169c8c33a7c6b72ea9cb1?placeholderIfAbsent=true',
-        description: 'خدمة زراعة الثيل الطبيعي والصناعي مع ضمان جودة العشب. نقوم بتجهيز الأرض وزراعة الثيل مع توفير خدمات الصيانة الدورية.'
-      }
-    };
-
-    const service = serviceData[serviceType];
-    if (service) {
-      if (serviceType === 'projects') {
-        router.push({
-          pathname: '/(tabs)/Home/project',
-          params: {
-            id: service.id,
-            name: service.name,
-            image: service.image,
-            description: service.description
-          }
-        });
-      } else {
-        router.push({
-          pathname: '/(tabs)/Home/service-details',
-          params: {
-            id: service.id,
-            name: service.name,
-            image: service.image,
-            description: service.description
-          }
-        });
-      }
+  const handleServicePress = (service: ServiceData) => {
+    if (service.serviceType === 'المشاريع') {
+      router.push({
+        pathname: '/(tabs)/Home/project',
+        params: {
+          id: service._id,
+          name: service.title,
+          image: service.image,
+          description: service.description
+        }
+      });
+    } else {
+      router.push({
+        pathname: '/(tabs)/Home/service-details',
+        params: {
+          id: service._id,
+          name: service.title,
+          image: service.image,
+          description: service.description
+        }
+      });
     }
   };
 
@@ -307,47 +347,58 @@ const User4: React.FC = () => {
 
       <View style={styles.contentContainer}>
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          {/* Banner Section */}
-          <Banner images={bannerImages} />
+          {/* Banner and Services Section or Network Error */}
+          {isNetworkConnected ? (
+            <>
+              {/* Banner Section */}
+              <Banner images={bannerImages} />
 
-          {/* Services Section */}
-          <View style={styles.servicesContainer}>
-            <View style={styles.servicesHeader}>
-              <Text style={styles.servicesTitle}>الخدمات الزراعية</Text>
-            </View>
+              {/* Services Section */}
+              {services.length > 0 && (
+                <View style={styles.servicesContainer}>
+                  <View style={styles.servicesHeader}>
+                    <Text style={styles.servicesTitle}>الخدمات الزراعية</Text>
+                  </View>
 
-            <View style={styles.servicesContent}>
-              <View style={styles.servicesGrid}>
-                <View style={styles.servicesRow}>
-                  <ServiceItem
-                    imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/9db5513cffa0f952bf72289940508e6bb2f43e86?placeholderIfAbsent=true"
-                    title="تنسيق الحدائق"
-                    onPress={() => handleServicePress('landscaping')}
-                    style={{ marginRight: 2 }}
-                  />
-                  <ServiceItem
-                    imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/4f68288a8dfbd3be84b86a86f69f10b478b30bb2?placeholderIfAbsent=true"
-                    title="زراعة الأشجار"
-                    onPress={() => handleServicePress('tree-planting')}
-                  />
+                  <View style={styles.servicesContent}>
+                    <View style={styles.servicesGrid}>
+                      {services.reduce((rows: any[], service: ServiceData, index: number) => {
+                        if (index % 2 === 0) {
+                          rows.push([service]);
+                        } else {
+                          rows[rows.length - 1].push(service);
+                        }
+                        return rows;
+                      }, []).map((row: ServiceData[], rowIndex: number) => (
+                        <View key={rowIndex} style={styles.servicesRow}>
+                          {row.map((service: ServiceData, itemIndex: number) => (
+                            <ServiceItem
+                              key={service._id}
+                              imageUri={service.image}
+                              title={service.title}
+                              onPress={() => handleServicePress(service)}
+                              style={itemIndex === 0 ? { marginRight: 2 } : {}}
+                            />
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+                  </View>
                 </View>
-
-                <View style={styles.servicesRow}>
-                  <ServiceItem
-                    imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true"
-                    title="المشاريع"
-                    onPress={() => handleServicePress('projects')}
-                    style={{ marginRight: 2 }}
-                  />
-                  <ServiceItem
-                    imageUri="https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/46f551cf45a05c4bbd3169c8c33a7c6b72ea9cb1?placeholderIfAbsent=true"
-                    title="زراعة ثيل"
-                    onPress={() => handleServicePress('grass-planting')}
-                  />
-                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.networkErrorContainer}>
+              <View style={styles.networkErrorContent}>
+                <Image
+                  source={{ uri: 'https://cdn-icons-png.flaticon.com/512/44/44386.png' }}
+                  style={[styles.networkErrorIcon, { tintColor: undefined }]}
+                />
+                <Text style={styles.networkErrorTitle}>لا يوجد اتصال بالإنترنت</Text>
+                <Text style={styles.networkErrorMessage}>يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى</Text>
               </View>
             </View>
-          </View>
+          )}
         </ScrollView>
         <CustomFooter />
       </View>
@@ -613,6 +664,45 @@ const styles = StyleSheet.create({
   activeTabTitle: {
     color: '#4CAF50',
     fontWeight: '600',
+  },
+
+  // Network Error Styles
+  networkErrorContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 350,
+  },
+
+  networkErrorContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+    width: '100%',
+  },
+
+  networkErrorIcon: {
+    width: 80,
+    height: 80,
+    marginBottom: 20,
+    tintColor: '#888888',
+  },
+
+  networkErrorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#888888',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+
+  networkErrorMessage: {
+    fontSize: 16,
+    color: '#AAAAAA',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });
 

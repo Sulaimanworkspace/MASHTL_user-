@@ -2,7 +2,8 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert } from 'react-native';
+import { createProjectRequest } from '../../services/api';
 
 export default function ProjectFormScreen() {
   const router = useRouter();
@@ -16,6 +17,10 @@ export default function ProjectFormScreen() {
     price: '',
     other: '',
   });
+  const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalType, setModalType] = useState<'success' | 'error'>('success');
+  const [modalMessage, setModalMessage] = useState('');
 
   // Clear form data when screen is focused for security
   useFocusEffect(
@@ -34,6 +39,88 @@ export default function ProjectFormScreen() {
 
   const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const validateForm = () => {
+    if (!form.projectName.trim()) {
+      setModalType('error');
+      setModalMessage('يرجى إدخال اسم المشروع');
+      setShowModal(true);
+      return false;
+    }
+    if (!form.projectType.trim()) {
+      setModalType('error');
+      setModalMessage('يرجى إدخال نوع المشروع');
+      setShowModal(true);
+      return false;
+    }
+    if (!form.city.trim()) {
+      setModalType('error');
+      setModalMessage('يرجى إدخال المدينة والحي');
+      setShowModal(true);
+      return false;
+    }
+    if (!form.duration.trim()) {
+      setModalType('error');
+      setModalMessage('يرجى إدخال مدة المشروع');
+      setShowModal(true);
+      return false;
+    }
+    if (!form.price.trim()) {
+      setModalType('error');
+      setModalMessage('يرجى إدخال قيمة المشروع');
+      setShowModal(true);
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const projectData = {
+        projectName: form.projectName.trim(),
+        projectType: form.projectType.trim(),
+        city: form.city.trim(),
+        address: form.address.trim(),
+        duration: form.duration.trim(),
+        price: form.price.trim(),
+        other: form.other.trim(),
+      };
+
+      const response = await createProjectRequest(projectData);
+      
+      if (response.success) {
+        setModalType('success');
+        setModalMessage('تم إرسال طلب المشروع بنجاح! سيتم مراجعته والتواصل معك قريباً.');
+        setShowModal(true);
+        
+        // Clear form after successful submission
+        setForm({
+          projectName: '',
+          projectType: '',
+          city: '',
+          address: '',
+          duration: '',
+          price: '',
+          other: '',
+        });
+      } else {
+        setModalType('error');
+        setModalMessage(response.message || 'حدث خطأ أثناء إرسال الطلب');
+        setShowModal(true);
+      }
+    } catch (error: any) {
+      console.error('Error submitting project request:', error);
+      setModalType('error');
+      setModalMessage('حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.');
+      setShowModal(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -135,18 +222,93 @@ export default function ProjectFormScreen() {
           </View>
         </View>
         {/* Gradient Button */}
-        <TouchableOpacity style={styles.buttonWrapper}>
+        <TouchableOpacity 
+          style={[styles.buttonWrapper, { opacity: isSubmitting ? 0.7 : 1 }]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        >
           <LinearGradient
             colors={["#2E8B57", "#4CAF50"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.gradientButton}
           >
-            <Text style={styles.buttonText}>إرسال</Text>
-            <FontAwesome5 name="paper-plane" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.buttonText}>
+              {isSubmitting ? 'جاري الإرسال...' : 'إرسال'}
+            </Text>
+            <FontAwesome5 
+              name={isSubmitting ? "spinner" : "paper-plane"} 
+              size={18} 
+              color="#fff" 
+              style={{ marginRight: 8 }} 
+            />
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Success/Error Modal */}
+      <Modal
+        visible={showModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Close Button */}
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => {
+                setShowModal(false);
+                if (modalType === 'success') {
+                  router.push('/(tabs)/Home');
+                }
+              }}
+            >
+              <FontAwesome5 name="times" size={20} color="#666" />
+            </TouchableOpacity>
+            
+            <View style={styles.modalContent}>
+              {/* Icon */}
+              <View style={styles.iconContainer}>
+                <FontAwesome5 
+                  name={modalType === 'success' ? "check-circle" : "exclamation-circle"} 
+                  size={50} 
+                  color={modalType === 'success' ? "#4CAF50" : "#FF3B30"} 
+                />
+              </View>
+              
+              {/* Title */}
+              <Text style={styles.modalTitle}>
+                {modalType === 'success' ? 'تم الإرسال بنجاح!' : 'خطأ في الإرسال'}
+              </Text>
+              
+              {/* Message */}
+              <Text style={styles.modalMessage}>
+                {modalMessage}
+              </Text>
+              
+              {/* OK Button */}
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  { backgroundColor: modalType === 'success' ? '#4CAF50' : '#FF3B30' }
+                ]}
+                onPress={() => {
+                  setShowModal(false);
+                  if (modalType === 'success') {
+                    router.push('/(tabs)/Home');
+                  }
+                }}
+              >
+                <Text style={styles.modalButtonText}>
+                  {modalType === 'success' ? 'العودة للرئيسية' : 'حسناً'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -274,5 +436,63 @@ const styles = StyleSheet.create({
     height: '70%',
     backgroundColor: '#e0e0e0',
     marginHorizontal: 6,
+  },
+  
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 1,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  modalContent: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  iconContainer: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  modalButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 25,
+    minWidth: 120,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 }); 

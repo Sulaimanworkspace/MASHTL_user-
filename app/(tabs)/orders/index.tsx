@@ -16,12 +16,14 @@ import {
   Alert,
   Linking
 } from 'react-native';
-import { getUserData, getUserServiceOrders, getUserNotifications, markNotificationAsRead } from '../../services/api';
+import { getUserData, getUserServiceOrders, getServices } from '../../services/api';
+import io from 'socket.io-client';
 
 const { width, height } = Dimensions.get('window');
 
 interface ServiceOrder {
   _id: string;
+  orderNumber?: string;
   serviceType: string;
   serviceTitle: string;
   description: string;
@@ -30,9 +32,10 @@ interface ServiceOrder {
     city: string;
   };
   farmer?: {
+    _id: string;
     name: string;
-    farmName: string;
     phone: string;
+    avatar?: string;
   };
   status: string;
   createdAt: string;
@@ -50,16 +53,46 @@ interface Notification {
   createdAt: string;
 }
 
+interface ServiceData {
+  _id: string;
+  title: string;
+  description: string;
+  serviceType: string;
+  image: string;
+  features: string[];
+  rating: number;
+  isActive: boolean;
+  order: number;
+}
+
 const User17: React.FC = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [currentNotification, setCurrentNotification] = useState<Notification | null>(null);
   const [showContactModal, setShowContactModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
+  const [services, setServices] = useState<ServiceData[]>([]);
+
+  // Initialize Socket.IO for real-time updates
+  useEffect(() => {
+    const socket = io('http://172.20.10.12:9090');
+    
+    socket.on('connect', () => {
+      console.log('Connected to socket server');
+    });
+
+    socket.on('order_status_update', (data: any) => {
+      console.log('Order status update received:', data);
+      // Refresh orders to show updated status
+      fetchOrders();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   // Debug contact modal state changes
   useEffect(() => {
@@ -69,6 +102,71 @@ const User17: React.FC = () => {
   useEffect(() => {
     console.log('🔍 Selected order changed:', selectedOrder ? selectedOrder._id : 'null');
   }, [selectedOrder]);
+
+
+
+  // Fetch services data
+  const fetchServices = async () => {
+    try {
+      const response = await getServices();
+      if (response.success) {
+        // Add the hardcoded المشاريع service to the dynamic services
+        const projectsService: ServiceData = {
+          _id: 'projects-hardcoded',
+          title: 'المشاريع',
+          description: 'تنفيذ المشاريع الزراعية الكبيرة والصغيرة مع فريق متخصص. نقدم حلول متكاملة للمشاريع الزراعية مع ضمان الجودة والالتزام بالمواعيد.',
+          image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true',
+          serviceType: 'المشاريع',
+          features: ['تخطيط المشروع.', 'تنفيذ بفريق متخصص.', 'ضمان الجودة.', 'التزام بالمواعيد.'],
+          rating: 4.2,
+          isActive: true,
+          order: 4
+        };
+        
+        // Combine dynamic services with hardcoded المشاريع
+        const allServices = [...response.data, projectsService];
+        setServices(allServices);
+      }
+    } catch (error) {
+      console.error('Error loading services:', error);
+      // Fallback services if API fails
+      setServices([
+        {
+          _id: 'fallback-1',
+          title: 'تنسيق الحدائق',
+          description: 'خدمة تنسيق الحدائق المنزلية والشركات بأحدث التصاميم والأساليب الحديثة. نقوم بتصميم وتنفيذ جميع أنواع الحدائق مع ضمان جودة العمل والمواد المستخدمة.',
+          image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/9db5513cffa0f952bf72289940508e6bb2f43e86?placeholderIfAbsent=true',
+          serviceType: 'تنسيق الحدائق',
+          features: ['تصميم الحديقة.', 'اختيار النباتات المناسبة.', 'تركيب أنظمة الري.', 'تنسيق المساحات الخضراء.'],
+          rating: 4.2,
+          isActive: true,
+          order: 1
+        },
+        {
+          _id: 'fallback-2',
+          title: 'زراعة الأشجار',
+          description: 'خدمة زراعة الأشجار بأنواعها المختلفة مع توفير الرعاية اللازمة. نقوم باختيار أفضل أنواع الأشجار المناسبة للمناخ والتربة مع ضمان نجاح الزراعة.',
+          image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/4f68288a8dfbd3be84b86a86f69f10b478b30bb2?placeholderIfAbsent=true',
+          serviceType: 'زراعة الأشجار',
+          features: ['اختيار أفضل أنواع الأشجار.', 'زراعة الأشجار بطريقة احترافية.', 'توفير الرعاية اللازمة.', 'ضمان نجاح الزراعة.'],
+          rating: 4.2,
+          isActive: true,
+          order: 2
+        },
+        {
+          _id: 'fallback-3',
+          title: 'زراعة ثيل',
+          description: 'خدمة زراعة الثيل الطبيعي والصناعي مع ضمان جودة العشب. نقوم بتجهيز الأرض وزراعة الثيل مع توفير خدمات الصيانة الدورية.',
+          image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/46f551cf45a05c4bbd3169c8c33a7c6b72ea9cb1?placeholderIfAbsent=true',
+          serviceType: 'زراعة ثيل',
+          features: ['تجهيز الأرض.', 'زراعة الثيل الطبيعي أو الصناعي.', 'ضمان جودة العشب.', 'خدمات صيانة دورية.'],
+          rating: 4.2,
+          isActive: true,
+          order: 3
+        }
+      ]);
+    }
+  };
 
   // Fetch user orders
   const fetchOrders = async () => {
@@ -88,39 +186,7 @@ const User17: React.FC = () => {
     }
   };
 
-  // Check for new notifications
-  const checkNotifications = async () => {
-    try {
-      const userData = await getUserData();
-      if (!userData || !userData._id) return;
 
-      console.log('🔔 Checking notifications for user:', userData._id);
-      const response = await getUserNotifications(userData._id);
-      console.log('🔔 Notifications response:', response);
-      
-      if (response.success) {
-        console.log('🔔 All notifications:', response.data);
-        
-        // Find unread order acceptance notifications
-        const unreadAcceptanceNotification = response.data.find(
-          (notification: Notification) => 
-            notification.type === 'order_accepted' && !notification.isRead
-        );
-
-        console.log('🔔 Found unread acceptance notification:', unreadAcceptanceNotification);
-
-        if (unreadAcceptanceNotification) {
-          setCurrentNotification(unreadAcceptanceNotification);
-          setShowNotificationModal(true);
-          console.log('🔔 Showing notification modal');
-        } else {
-          console.log('🔔 No unread acceptance notifications found');
-        }
-      }
-    } catch (error) {
-      console.error('Error checking notifications:', error);
-    }
-  };
 
   // Check authentication and redirect if not logged in
   useFocusEffect(
@@ -135,9 +201,9 @@ const User17: React.FC = () => {
           setIsLoggedIn(true);
           setIsLoading(false);
           
-          // Fetch orders and check notifications
+          // Fetch services and orders
+          await fetchServices();
           await fetchOrders();
-          await checkNotifications();
         } catch (error) {
           router.replace('/(tabs)/auth/login');
         }
@@ -149,9 +215,15 @@ const User17: React.FC = () => {
   // Refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
+    await fetchServices();
     await fetchOrders();
-    await checkNotifications();
     setRefreshing(false);
+  };
+
+  // Helper function to get service name based on serviceType
+  const getServiceName = (serviceType: string) => {
+    const service = services.find(s => s.serviceType === serviceType);
+    return service ? service.title : serviceType;
   };
 
   // Helper functions
@@ -159,7 +231,9 @@ const User17: React.FC = () => {
     switch (status) {
       case 'pending': return '#f59e0b';
       case 'accepted': return '#22c55e';
-      case 'completed': return '#3b82f6';
+      case 'in_progress': return '#FF9800';
+      case 'working': return '#2196F3';
+      case 'completed': return '#22c55e';
       case 'cancelled': return '#ef4444';
       case 'rejected': return '#ef4444';
       default: return '#6b7280';
@@ -169,7 +243,9 @@ const User17: React.FC = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pending': return 'قيد الانتظار';
-      case 'accepted': return 'مقبول';
+      case 'accepted': return 'تم قبول الطلب';
+      case 'in_progress': return 'تم بدء العمل';
+      case 'working': return 'جاري التنفيذ';
       case 'completed': return 'مكتمل';
       case 'cancelled': return 'ملغي';
       case 'rejected': return 'مرفوض';
@@ -285,13 +361,19 @@ const User17: React.FC = () => {
             >
               <View style={styles.orderContent}>
                 <View style={styles.orderMainInfo}>
-                  <Text style={styles.serviceTitle}>{order.serviceTitle}</Text>
+                  <Text style={styles.serviceTitle}>{getServiceName(order.serviceType)}</Text>
                 </View>
                 
                 <View style={styles.locationRow}>
-                  <FontAwesome5 name="map-marker-alt" size={16} color="#4CAF50" />
+                  <FontAwesome5 name="map-marker-alt" size={16} color="#666" style={{ marginLeft: 6 }} />
                   <Text style={styles.locationText}>{order.location.address}</Text>
                 </View>
+                
+                {order.orderNumber && (
+                  <View style={styles.orderNumberContainer}>
+                    <Text style={styles.orderNumber}>رقم الطلب: {order.orderNumber}</Text>
+                  </View>
+                )}
                 
                 {order.description && (
                   <Text style={styles.orderDescription}>{order.description}</Text>
@@ -299,7 +381,7 @@ const User17: React.FC = () => {
                 
                 {order.farmer && (
                   <Text style={styles.farmerInfo}>
-                    المزارع: {order.farmer.name || order.farmer.farmName}
+                    المزارع: {order.farmer.name}
                   </Text>
                 )}
 
@@ -323,60 +405,7 @@ const User17: React.FC = () => {
         )}
       </ScrollView>
 
-      {/* Notification Modal */}
-      <Modal
-        visible={showNotificationModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowNotificationModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              {/* Success Icon */}
-              <View style={styles.successIconContainer}>
-                <FontAwesome5 name="check-circle" size={50} color="#4CAF50" />
-              </View>
-              
-              {/* Title */}
-              <Text style={styles.modalTitle}>
-                {currentNotification?.title || 'تم قبول طلبك'}
-              </Text>
-              
-              {/* Message */}
-              <Text style={styles.modalMessage}>
-                {currentNotification?.message || 'تم قبول طلبك بنجاح من قبل المزارع'}
-              </Text>
-              
-              {/* OK Button */}
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={async () => {
-                  // Mark notification as read
-                  if (currentNotification) {
-                    try {
-                      const userData = await getUserData();
-                      if (userData && userData._id) {
-                        await markNotificationAsRead(currentNotification._id, userData._id);
-                      }
-                    } catch (error) {
-                      console.error('Error marking notification as read:', error);
-                    }
-                  }
-                  
-                  setShowNotificationModal(false);
-                  setCurrentNotification(null);
-                  
-                  // Refresh orders to show updated data
-                  await fetchOrders();
-                }}
-              >
-                <Text style={styles.modalButtonText}>حسناً</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-      </View>
-      </Modal>
+
 
       {/* Contact Modal */}
       <Modal
@@ -409,13 +438,13 @@ const User17: React.FC = () => {
                     <FontAwesome5 name="user" size={30} color="#4CAF50" />
                   </View>
                   <Text style={styles.farmerContactName}>
-                    {selectedOrder.farmer?.name || selectedOrder.farmer?.farmName || 'المزارع المسؤول'}
+                    {selectedOrder.farmer?.name || 'المزارع المسؤول'}
                   </Text>
                   <Text style={styles.farmerContactPhone}>
                     {selectedOrder.farmer?.phone || 'سيتم توفير رقم الهاتف قريباً'}
                   </Text>
                   <Text style={styles.serviceContactTitle}>
-                    {selectedOrder.serviceTitle}
+                    {getServiceName(selectedOrder.serviceType)}
                   </Text>
                 </View>
               )}
@@ -423,10 +452,23 @@ const User17: React.FC = () => {
               {/* Contact Options */}
               <View style={styles.contactOptions}>
                 <TouchableOpacity
-                  style={styles.chatButton}
+                  style={[styles.chatButton, !selectedOrder?.farmer && styles.disabledButton]}
                   onPress={() => {
-                    setShowContactModal(false);
-                    router.push('/(tabs)/chats');
+                    if (selectedOrder?.farmer) {
+                      setShowContactModal(false);
+                      // Navigate to real chat with farmer data
+                      router.push({
+                        pathname: '/(tabs)/chats/message',
+                        params: {
+                          orderId: selectedOrder._id,
+                          farmerId: selectedOrder.farmer._id || 'unknown',
+                          farmerName: selectedOrder.farmer.name,
+                          farmerAvatar: selectedOrder.farmer.avatar
+                        }
+                      });
+                    } else {
+                      Alert.alert('تنبيه', 'لا يمكن بدء المحادثة حتى يتم قبول الطلب من قبل مزارع');
+                    }
                   }}
                 >
                   <FontAwesome5 name="comments" size={24} color="#fff" />
@@ -712,11 +754,25 @@ const styles = StyleSheet.create({
 
   serviceTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#2E7D32',
+    fontWeight: '700',
+    color: '#333',
     textAlign: 'right',
-    letterSpacing: 0.2,
-    flex: 1,
+    width: '100%',
+  },
+  orderNumberContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 6,
+    paddingHorizontal: 8,
+  },
+  orderNumber: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'right',
+    fontFamily: 'monospace',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
 
   locationRow: {
@@ -725,41 +781,42 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginBottom: 6,
     width: '100%',
-    backgroundColor: 'rgba(76, 175, 80, 0.05)',
-    paddingHorizontal: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingHorizontal: 14,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
   },
 
   locationText: {
     fontSize: 13,
-    color: '#388E3C',
+    color: '#666',
     marginLeft: 6,
     textAlign: 'right',
     fontWeight: '500',
   },
 
   orderDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#555',
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'right',
-    lineHeight: 20,
-    backgroundColor: 'rgba(245, 245, 245, 0.6)',
-    padding: 8,
-    borderRadius: 8,
+    lineHeight: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     width: '100%',
   },
 
   farmerInfo: {
     fontSize: 15,
-    color: '#4CAF50',
+    color: '#333',
     fontWeight: '700',
     textAlign: 'right',
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     marginTop: 4,
     letterSpacing: 0.3,
   },

@@ -83,6 +83,8 @@ api.interceptors.response.use(
     } else if (error.request) {
       console.error('📦 No response received - Check if server is running on correct port');
       console.error('📦 Current API URL:', API_BASE_URL);
+      // Convert network error to Arabic message
+      error.message = 'فشل في الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى';
     }
     return Promise.reject(error);
   }
@@ -91,18 +93,41 @@ api.interceptors.response.use(
 // User storage functions
 export const storeUserData = async (userData: any) => {
   try {
+    console.log('🔄 Storing user data to AsyncStorage:', userData);
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
+    console.log('✅ User data stored successfully');
   } catch (error) {
-    console.error('Error storing user data:', error);
+    console.error('❌ Error storing user data:', error);
   }
 };
 
 export const getUserData = async () => {
   try {
     const userData = await AsyncStorage.getItem('user_data');
-    return userData ? JSON.parse(userData) : null;
+    const parsedData = userData ? JSON.parse(userData) : null;
+    console.log('📱 Retrieved user data from AsyncStorage:', parsedData?.location ? {
+      address: parsedData.location.address,
+      latitude: parsedData.location.latitude,
+      longitude: parsedData.location.longitude
+    } : 'No location data');
+    return parsedData;
   } catch (error) {
-    console.error('Error getting user data:', error);
+    console.error('❌ Error getting user data:', error);
+    return null;
+  }
+};
+
+export const refreshUserDataFromServer = async () => {
+  try {
+    const response = await api.get('/auth/user-profile');
+    if (response.data && response.data.success) {
+      await AsyncStorage.setItem('user_data', JSON.stringify(response.data.data));
+      console.log('✅ User data refreshed from server');
+      return response.data.data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error refreshing user data from server:', error);
     return null;
   }
 };
@@ -197,6 +222,7 @@ export const updateUserLocation = async (userId: string, locationData: {
 }) => {
   try {
     const response = await api.put(`/auth/update-location/${userId}`, locationData);
+    console.log('✅ Location updated on server:', response.data);
     return response.data;
   } catch (error: any) {
     throw error;
@@ -247,6 +273,47 @@ export const cancelServiceOrder = async (orderId: string) => {
   }
 };
 
+// Chat API functions
+export const getChatHistory = async (orderId: string) => {
+  try {
+    const response = await api.get(`/chat/history/${orderId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const sendChatMessage = async (orderId: string, receiverId: string, message: string) => {
+  try {
+    const response = await api.post('/chat/send', {
+      orderId,
+      receiverId,
+      message
+    });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const getUnreadMessageCount = async () => {
+  try {
+    const response = await api.get('/chat/unread-count');
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const markMessagesAsRead = async (orderId: string) => {
+  try {
+    const response = await api.put(`/chat/mark-read/${orderId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 // Wallet API functions
 export const getUserWallet = async () => {
   try {
@@ -259,6 +326,72 @@ export const getUserWallet = async () => {
     return response.data;
   } catch (error: any) {
     console.error('Error fetching wallet:', error);
+    throw error;
+  }
+};
+
+// Services API functions
+export const getServices = async () => {
+  try {
+    console.log('🔍 Fetching services from backend...');
+    const response = await api.get('/services');
+    console.log('✅ Services fetched successfully:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error fetching services:', error);
+    
+    // If backend is not available, return empty services array
+    // The المشاريع service will be added hardcoded in the Home component
+    console.log('🔄 No fallback services - returning empty array');
+    return {
+      success: false,
+      data: [],
+      count: 0
+    };
+  }
+};
+
+export const getServiceById = async (id: string) => {
+  try {
+    console.log('🔍 Fetching service by ID:', id);
+    const response = await api.get(`/services/${id}`);
+    console.log('✅ Service fetched successfully:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error fetching service:', error);
+    throw error;
+  }
+};
+
+// Project API functions
+export const createProjectRequest = async (projectData: {
+  projectName: string;
+  projectType: string;
+  city: string;
+  address?: string;
+  duration: string;
+  price: string;
+  other?: string;
+}) => {
+  try {
+    console.log('🔄 Creating project request:', projectData);
+    const response = await api.post('/projects/create', projectData);
+    console.log('✅ Project request created successfully:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error creating project request:', error);
+    throw error;
+  }
+};
+
+export const getUserProjectRequests = async () => {
+  try {
+    console.log('🔄 Fetching user project requests');
+    const response = await api.get('/projects/user');
+    console.log('✅ User project requests fetched successfully:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error fetching user project requests:', error);
     throw error;
   }
 };

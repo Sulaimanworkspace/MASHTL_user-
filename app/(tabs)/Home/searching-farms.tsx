@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { createServiceOrder, getUserData, cancelServiceOrder, getUserNotifications, markNotificationAsRead } from '../../services/api';
+import io from 'socket.io-client';
 
 export default function SearchingFarmsScreen() {
   const router = useRouter();
@@ -14,47 +15,88 @@ export default function SearchingFarmsScreen() {
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [currentNotification, setCurrentNotification] = useState<any>(null);
 
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('🔔 [SearchingFarms] Modal state changed:', {
+      showNotificationModal,
+      currentNotification: currentNotification ? {
+        id: currentNotification._id,
+        type: currentNotification.type,
+        title: currentNotification.title
+      } : null
+    });
+  }, [showNotificationModal, currentNotification]);
+
   // Animated dots
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
 
-  // Check for new notifications
+  // Check for new notifications - ONLY for current order
   const checkNotifications = async () => {
     try {
       const userData = await getUserData();
       if (!userData || !userData._id) return;
 
-      console.log('🔔 [SearchingFarms] Checking notifications for user:', userData._id);
+      // Only check notifications if we have a current order
+      if (!createdOrderId) {
+        console.log('🔔 [SearchingFarms] No current order ID - skipping notification check');
+        return;
+      }
+
+      console.log('🔔 [SearchingFarms] Checking notifications for current order:', createdOrderId);
       const response = await getUserNotifications(userData._id);
       
       if (response.success) {
+        // Only look for notifications related to the current order
+        const currentOrderNotifications = response.data.filter(
+          (notification: any) => {
+            const isMatch = notification.relatedId && notification.relatedId.toString() === createdOrderId;
+            console.log('🔔 [SearchingFarms] Checking notification:', {
+              notificationId: notification._id,
+              notificationRelatedId: notification.relatedId,
+              currentOrderId: createdOrderId,
+              isMatch: isMatch,
+              isUnread: !notification.isRead,
+              type: notification.type
+            });
+            return isMatch && !notification.isRead;
+          }
+        );
+
         console.log('🔔 [SearchingFarms] All notifications:', response.data);
-        console.log('🔔 [SearchingFarms] Notification types found:', response.data.map((n: any) => ({ type: n.type, isRead: n.isRead, title: n.title })));
+        console.log('🔔 [SearchingFarms] Current order ID:', createdOrderId);
+        console.log('🔔 [SearchingFarms] Current order notifications:', currentOrderNotifications);
         
-        // Find unread order acceptance notifications
-        const unreadAcceptanceNotification = response.data.find(
-          (notification: any) => 
-            notification.type === 'order_accepted' && !notification.isRead
+        // Find unread order acceptance notification for current order
+        const unreadAcceptanceNotification = currentOrderNotifications.find(
+          (notification: any) => notification.type === 'order_accepted'
         );
 
-        // Find unread order rejection notifications
-        const unreadRejectionNotification = response.data.find(
-          (notification: any) => 
-            notification.type === 'order_rejected' && !notification.isRead
+        // Find unread order rejection notification for current order
+        const unreadRejectionNotification = currentOrderNotifications.find(
+          (notification: any) => notification.type === 'order_rejected'
         );
 
-        console.log('🔔 [SearchingFarms] Found unread acceptance notification:', unreadAcceptanceNotification);
-        console.log('🔔 [SearchingFarms] Found unread rejection notification:', unreadRejectionNotification);
+        console.log('🔔 [SearchingFarms] Found unread acceptance notification for current order:', unreadAcceptanceNotification);
+        console.log('🔔 [SearchingFarms] Found unread rejection notification for current order:', unreadRejectionNotification);
 
-        if (unreadAcceptanceNotification) {
+        // Only show modal if we're still on this screen and have a current order
+        if (unreadAcceptanceNotification && createdOrderId) {
+          console.log('🔔 [SearchingFarms] Setting acceptance notification and showing modal');
           setCurrentNotification(unreadAcceptanceNotification);
           setShowNotificationModal(true);
-          console.log('🔔 [SearchingFarms] Showing acceptance notification modal');
-        } else if (unreadRejectionNotification) {
+          console.log('🔔 [SearchingFarms] Modal state should now be true for acceptance');
+        } else if (unreadRejectionNotification && createdOrderId) {
+          console.log('🔔 [SearchingFarms] Setting rejection notification and showing modal');
           setCurrentNotification(unreadRejectionNotification);
           setShowNotificationModal(true);
-          console.log('🔔 [SearchingFarms] Showing rejection notification modal');
+          console.log('🔔 [SearchingFarms] Modal state should now be true for rejection');
+        } else {
+          console.log('🔔 [SearchingFarms] No unread notifications found for current order or order ID cleared');
+          console.log('🔔 [SearchingFarms] Current order ID:', createdOrderId);
+          console.log('🔔 [SearchingFarms] Acceptance notification:', unreadAcceptanceNotification);
+          console.log('🔔 [SearchingFarms] Rejection notification:', unreadRejectionNotification);
         }
       }
     } catch (error) {
@@ -71,6 +113,8 @@ export default function SearchingFarmsScreen() {
       setOrderCreated(false);
       setCreatedOrderId(null);
       setShowModal(false);
+      setShowNotificationModal(false);
+      setCurrentNotification(null);
       
       const createOrder = async () => {
         try {
@@ -84,19 +128,52 @@ export default function SearchingFarmsScreen() {
           const serviceType = (params.projectName as string) || 'تنسيق الحدائق';
           const description = (params.description as string) || 'خدمة تصميم وتنفيذ الحدائق المنزلية';
           
+          // Get location from params or use user's saved location or defaults
+          let locationData = {
+            address: 'الرياض حي الزهرة, الرياض',
+            city: 'الرياض',
+            coordinates: {
+              latitude: 24.7136,
+              longitude: 46.6753
+            }
+          };
+
+          // Try to parse location from params first
+          if (params.location) {
+            try {
+              const parsedLocation = JSON.parse(params.location as string);
+              locationData = {
+                address: parsedLocation.address,
+                city: parsedLocation.city || 'الرياض',
+                coordinates: {
+                  latitude: parsedLocation.latitude || 24.7136,
+                  longitude: parsedLocation.longitude || 46.6753
+                }
+              };
+            } catch (error) {
+              console.error('Error parsing location from params:', error);
+            }
+          } else if (userData.location && userData.location.address) {
+            // Fall back to user's saved location
+            locationData = {
+              address: userData.location.address,
+              city: userData.location.city || 'الرياض',
+              coordinates: {
+                latitude: userData.location.latitude || 24.7136,
+                longitude: userData.location.longitude || 46.6753
+              }
+            };
+          }
+
+          // Get notes from params or use default
+          const notes = (params.notes as string) || 'طلب جديد من التطبيق';
+          
           const orderData = {
             serviceType,
             serviceTitle: serviceType,
             description,
-            location: {
-              address: 'الرياض حي الزهرة, الرياض',
-              city: 'الرياض',
-              coordinates: {
-                latitude: 24.7136,
-                longitude: 46.6753
-              }
-            },
-            notes: 'طلب جديد من التطبيق'
+            location: locationData,
+            notes
           };
 
           console.log('🔄 Creating fresh service order:', orderData);
@@ -125,6 +202,9 @@ export default function SearchingFarmsScreen() {
       // Cleanup function
       return () => {
         clearTimeout(timer);
+        // Clear notification modal state when screen is unfocused
+        setShowNotificationModal(false);
+        setCurrentNotification(null);
       };
     }, [params.projectName, params.description]) // Depend on params to recreate when they change
   );
@@ -148,21 +228,77 @@ export default function SearchingFarmsScreen() {
     ).start();
   }, []);
 
+  // Initialize Socket.IO for real-time updates
+  useEffect(() => {
+    const socket = io('http://172.20.10.12:9090');
+    
+    socket.on('connect', () => {
+      console.log('🔌 [SearchingFarms] Connected to socket server');
+    });
+
+    socket.on('order_status_update', (data: any) => {
+      console.log('🔌 [SearchingFarms] Order status update received:', data);
+      console.log('🔌 [SearchingFarms] Current order ID:', createdOrderId);
+      console.log('🔌 [SearchingFarms] Data order ID:', data.orderId);
+      
+      // Check if this update is for our current order
+      if (createdOrderId && data.orderId && data.orderId.toString() === createdOrderId) {
+        console.log('🔌 [SearchingFarms] This is our order! Status:', data.status);
+        
+        // If order was accepted or rejected, check for notifications immediately
+        if (data.status === 'accepted' || data.status === 'rejected') {
+          console.log('🔌 [SearchingFarms] Order accepted/rejected - checking notifications immediately');
+          setTimeout(() => {
+            checkNotifications();
+          }, 1000); // Small delay to ensure notification is created
+        }
+      } else {
+        console.log('🔌 [SearchingFarms] Not our order or no current order ID');
+        // Fallback: check notifications anyway in case of timing issues
+        if (data.status === 'accepted' || data.status === 'rejected') {
+          console.log('🔌 [SearchingFarms] Fallback: checking notifications for any order');
+          setTimeout(() => {
+            checkNotifications();
+          }, 1500);
+        }
+      }
+    });
+
+    socket.on('order_update', (data: any) => {
+      console.log('🔌 [SearchingFarms] Order update received:', data);
+      
+      // If this is a new order and we have a current order, check if it's ours
+      if (data.type === 'new' && createdOrderId && data.order._id === createdOrderId) {
+        console.log('🔌 [SearchingFarms] Our order was updated:', data.order);
+        // Check notifications for any status changes
+        setTimeout(() => {
+          checkNotifications();
+        }, 1000);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []); // Remove dependency to ensure socket is always active
+
   // Periodic notification checking
   React.useEffect(() => {
     // Check notifications immediately
     checkNotifications();
     
-    // Then check every 3 seconds while on this screen
+    // More frequent checking when we have an active order
+    const interval = createdOrderId ? 3000 : 10000; // 3 seconds if order exists, 10 seconds otherwise
+    
     const notificationInterval = setInterval(() => {
-      console.log('🔔 [SearchingFarms] Periodic notification check');
+      console.log('🔔 [SearchingFarms] Periodic notification check (interval: ' + interval + 'ms)');
       checkNotifications();
-    }, 3000);
+    }, interval);
 
     return () => {
       clearInterval(notificationInterval);
     };
-  }, []);
+  }, [createdOrderId]); // Re-run when order ID changes
 
   return (
     <View style={styles.container}>
@@ -247,6 +383,32 @@ export default function SearchingFarmsScreen() {
       >
         <View style={styles.notificationModalOverlay}>
           <View style={styles.notificationModalContainer}>
+            {/* X Button to close and go to home */}
+            <TouchableOpacity
+              style={styles.notificationModalCloseButton}
+              onPress={async () => {
+                // Mark notification as read
+                if (currentNotification) {
+                  try {
+                    const userData = await getUserData();
+                    if (userData && userData._id) {
+                      await markNotificationAsRead(currentNotification._id, userData._id);
+                    }
+                  } catch (error) {
+                    console.error('Error marking notification as read:', error);
+                  }
+                }
+                
+                setShowNotificationModal(false);
+                setCurrentNotification(null);
+                
+                // Navigate to home page
+                router.push('/(tabs)/Home');
+              }}
+            >
+              <FontAwesome5 name="times" size={20} color="#666" />
+            </TouchableOpacity>
+            
             <View style={styles.notificationModalContent}>
               {/* Icon - Different for acceptance vs rejection */}
               <View style={styles.successIconContainer}>
@@ -418,6 +580,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     overflow: 'hidden',
+    position: 'relative',
+  },
+
+  notificationModalCloseButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 1,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
   },
 
   notificationModalContent: {

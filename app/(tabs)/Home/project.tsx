@@ -245,10 +245,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   featureItem: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     marginBottom: 12,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-zf',
   },
   featureText: {
     fontSize: 16,

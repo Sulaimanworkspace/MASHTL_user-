@@ -51,10 +51,10 @@ export default function MapPicker() {
         
         console.log('📍 Current location:', location.coords);
         
-        // Update the map with current location
+        // Update the map with current location and auto-confirm
         if (webViewRef.current) {
           webViewRef.current.postMessage(JSON.stringify({
-            type: 'SET_CURRENT_LOCATION',
+            type: 'SET_CURRENT_LOCATION_AND_CONFIRM',
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
           }));
@@ -99,7 +99,7 @@ export default function MapPicker() {
     </head>
     <body>
       <div id="loading" class="loading"><div>جاري تحميل الخريطة...</div></div>
-      <div class="info-card"><div class="info-title">الموقع المحدد:</div><div class="info-address" id="address">اضغط على الخريطة لتحديد الموقع</div></div>
+      <div class="info-card"><div class="info-title">الموقع المحدد:</div><div class="info-address" id="address">اضغط على الخريطة لتحديد الموقع أو استخدم زر الموقع الحالي</div></div>
       <div id="map"></div>
       <button class="confirm-btn" onclick="confirmLocation()">تأكيد الموقع</button>
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -109,7 +109,7 @@ export default function MapPicker() {
         let userLocationMarker;
         let currentLat = 24.7136;
         let currentLng = 46.6753;
-        let currentAddress = "اضغط على الخريطة لتحديد الموقع";
+        let currentAddress = "اضغط على الخريطة لتحديد الموقع أو استخدم زر الموقع الحالي";
         let locationSelected = false;
         function hideLoading() { const loading = document.getElementById('loading'); if (loading) { loading.style.display = 'none'; } }
         function updateAddress(address) { document.getElementById('address').textContent = address; currentAddress = address; }
@@ -140,11 +140,31 @@ export default function MapPicker() {
           try {
             fetch(\`https://nominatim.openstreetmap.org/reverse?format=json&lat=\${lat}&lon=\${lng}&accept-language=ar\`)
               .then(response => response.json())
-              .then(data => { if (data && data.display_name) { updateAddress(data.display_name); } else { updateAddress('موقع محدد على الخريطة'); } })
+              .then(data => { 
+                if (data && data.display_name) {
+                  // Check if location is in Saudi Arabia
+                  if (data.display_name.includes('السعودية') || data.display_name.includes('Saudi Arabia')) {
+                    updateAddress(data.display_name);
+                  } else {
+                    // Location is outside Saudi Arabia, use default address
+                    updateAddress('موقع خارج المملكة العربية السعودية - سيتم استخدام موقع الرياض');
+                    // Reset to Riyadh coordinates
+                    setTimeout(function() {
+                      updateSelectedLocation(24.7136, 46.6753);
+                    }, 2000);
+                  }
+                } else { 
+                  updateAddress('موقع محدد على الخريطة'); 
+                }
+              })
               .catch(error => { console.error('Geocoding error:', error); updateAddress('موقع محدد على الخريطة'); });
           } catch (error) { updateAddress('موقع محدد على الخريطة'); }
         }
-        function setLocationFromNative(lat, lng) { showUserLocation(lat, lng); }
+        function setLocationFromNative(lat, lng) { 
+          showUserLocation(lat, lng); 
+          // Automatically select the current location
+          updateSelectedLocation(lat, lng);
+        }
         function confirmLocation() {
           if (!locationSelected) { return; }
           try {
@@ -157,6 +177,14 @@ export default function MapPicker() {
             const data = JSON.parse(event.data);
             if (data.type === 'SET_CURRENT_LOCATION') {
               setLocationFromNative(data.latitude, data.longitude);
+            } else if (data.type === 'SET_CURRENT_LOCATION_AND_CONFIRM') {
+              setLocationFromNative(data.latitude, data.longitude);
+              // Show feedback that location will be auto-confirmed
+              updateAddress('جاري تحديد موقعك الحالي...');
+              // Auto-confirm after a short delay
+              setTimeout(function() {
+                confirmLocation();
+              }, 1500);
             }
           } catch (error) { console.error('Error parsing message:', error); }
         });
@@ -185,11 +213,54 @@ export default function MapPicker() {
         // Save location to backend and update local storage
         const userData = await getUserData();
         if (userData && userData._id) {
+          // Extract city from address or default to Riyadh
+          let city = 'الرياض';
+          if (data.address) {
+            // Check if address contains Saudi Arabia indicators
+            const isSaudiArabia = data.address.includes('السعودية') || 
+                                  data.address.includes('Saudi Arabia') ||
+                                  data.address.includes('الرياض') ||
+                                  data.address.includes('Riyadh');
+            
+            if (isSaudiArabia) {
+              // Extract city from address
+              const addressParts = data.address.split(',');
+              for (const part of addressParts) {
+                const trimmed = part.trim();
+                if (trimmed.includes('الرياض') || trimmed.includes('Riyadh')) {
+                  city = 'الرياض';
+                  break;
+                } else if (trimmed.includes('جدة') || trimmed.includes('Jeddah')) {
+                  city = 'جدة';
+                  break;
+                } else if (trimmed.includes('الدمام') || trimmed.includes('Dammam')) {
+                  city = 'الدمام';
+                  break;
+                }
+              }
+            }
+          }
+
+          // Use default Riyadh coordinates if user is not in Saudi Arabia
+          let finalLatitude = data.latitude;
+          let finalLongitude = data.longitude;
+          let finalAddress = data.address;
+          
+          if (!data.address.includes('السعودية') && !data.address.includes('Saudi Arabia')) {
+            // User is not in Saudi Arabia, use default Riyadh coordinates
+            finalLatitude = 24.7136;
+            finalLongitude = 46.6753;
+            finalAddress = 'الرياض, المملكة العربية السعودية';
+            city = 'الرياض';
+            
+            console.log('📍 User location outside Saudi Arabia, using default Riyadh coordinates');
+          }
+
           const locationData = {
-            latitude: data.latitude,
-            longitude: data.longitude,
-            address: data.address,
-            city: 'الرياض',
+            latitude: finalLatitude,
+            longitude: finalLongitude,
+            address: finalAddress,
+            city: city,
           };
 
           // Update backend
