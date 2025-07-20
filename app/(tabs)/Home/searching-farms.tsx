@@ -315,6 +315,9 @@ export default function SearchingFarmsScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => setShowModal(true)}>
             <FontAwesome5 name="arrow-right" size={20} color="#fff" />
           </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>جاري البحث</Text>
+          </View>
         </View>
       </View>
       <View style={styles.content}>
@@ -473,7 +476,7 @@ const styles = StyleSheet.create({
   navBar: {
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 20,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -492,7 +495,18 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 8,
     zIndex: 1,
-    top: -8,
+    top: 0,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   content: {
     flex: 1,

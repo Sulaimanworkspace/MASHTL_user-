@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert } from 'react-native';
-import { createProjectRequest } from '../../services/api';
+import { createProjectRequest, getUserData } from '../../services/api';
 
 export default function ProjectFormScreen() {
   const router = useRouter();
@@ -81,6 +81,17 @@ export default function ProjectFormScreen() {
     setIsSubmitting(true);
     
     try {
+      // Get user data to include location
+      const userData = await getUserData();
+      let userLocation = null;
+      
+      if (userData && userData.location) {
+        userLocation = {
+          latitude: userData.location.latitude || 24.7136,
+          longitude: userData.location.longitude || 46.6753
+        };
+      }
+      
       const projectData = {
         projectName: form.projectName.trim(),
         projectType: form.projectType.trim(),
@@ -89,6 +100,7 @@ export default function ProjectFormScreen() {
         duration: form.duration.trim(),
         price: form.price.trim(),
         other: form.other.trim(),
+        userLocation: userLocation
       };
 
       const response = await createProjectRequest(projectData);
@@ -321,7 +333,7 @@ const styles = StyleSheet.create({
   navBar: {
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 20,
     position: 'relative',
     overflow: 'hidden',
   },

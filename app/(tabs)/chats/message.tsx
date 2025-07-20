@@ -197,7 +197,7 @@ const MessageScreen: React.FC = () => {
               <View style={[styles.messageRow, isMyMessage ? styles.myMessageRow : styles.userMessageRow]}>
                 {!isMyMessage && (
                   <Image 
-                    source={{ uri: farmerAvatar || 'https://ui-avatars.com/api/?name=Farmer' }} 
+                    source={require('../../../assets/images/icon.jpg')}
                     style={styles.avatarSmall} 
                   />
                 )}

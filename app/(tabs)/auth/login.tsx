@@ -1,6 +1,7 @@
 import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useRef, useCallback } from 'react';
 import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import { login, sendOTP, verifyOTP, storeUserData } from '../../services/api';
 
 export default function LoginScreen() {
@@ -187,7 +188,11 @@ export default function LoginScreen() {
               style={styles.eyeIconLeft}
               onPress={() => setShowPassword(!showPassword)}
             >
-              <Text style={styles.eyeIconText}>{showPassword ? '👁' : '👁‍🗨'}</Text>
+              <FontAwesome 
+                name={showPassword ? 'eye' : 'eye-slash'} 
+                size={18} 
+                color="#888" 
+              />
             </TouchableOpacity>
           </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
@@ -284,6 +289,7 @@ const styles = StyleSheet.create({
     height: 120,
     marginBottom: 12,
     marginTop: 8,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 22,
@@ -349,14 +355,12 @@ const styles = StyleSheet.create({
   eyeIconLeft: {
     position: 'absolute',
     left: 15,
-    top: '50%',
-    transform: [{ translateY: -12 }],
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 8,
     zIndex: 1,
-  },
-  eyeIconText: {
-    fontSize: 18,
-    color: '#888',
   },
   errorText: {
     color: '#FF5252',

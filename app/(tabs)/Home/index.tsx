@@ -9,9 +9,13 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
+    Animated
 } from 'react-native';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { getUserData, getNotificationCount, getServices } from '../../services/api';
+import { initializeWebSocket, disconnectWebSocket, setNotificationUpdateCallback } from '../../services/websocket';
+import { notificationService } from '../../services/notifications';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 import LocationPickerModal from '../../components/LocationPickerModal';
@@ -25,16 +29,48 @@ interface ServiceItemProps {
   style?: any;
 }
 
-const ServiceItem: React.FC<ServiceItemProps> = ({ imageUri, title, onPress, style }) => (
+const ServiceItem: React.FC<ServiceItemProps> = React.memo(({ imageUri, title, onPress, style }) => {
+  const [imageError, setImageError] = useState(false);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  return (
   <TouchableOpacity style={styles.serviceItem} onPress={onPress} activeOpacity={0.7}>
     <View style={styles.serviceImageContainer}>
-      <Image source={{ uri: imageUri }} style={styles.serviceImage} />
+        <Animated.Image 
+          source={{ 
+            uri: imageUri,
+            cache: 'force-cache' // Force cache to prevent mixing
+          }} 
+          style={[
+            styles.serviceImage,
+            { opacity: fadeAnim }
+          ]}
+          onLoadStart={() => {
+            fadeAnim.setValue(0);
+          }}
+          onLoad={() => {
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+          }}
+          onError={() => {
+            setImageError(true);
+          }}
+        />
+        {imageError && (
+          <View style={styles.imageErrorContainer}>
+            <FontAwesome5 name="image" size={20} color="#ccc" />
+          </View>
+        )}
     </View>
     <View style={styles.serviceTitleContainer}>
       <Text style={styles.serviceTitle}>{title}</Text>
     </View>
   </TouchableOpacity>
 );
+});
 
 interface TabItemProps {
   imageUri: string;
@@ -71,16 +107,55 @@ const User4: React.FC = () => {
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [services, setServices] = useState<ServiceData[]>([]);
   const [isNetworkConnected, setIsNetworkConnected] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [servicesLoaded, setServicesLoaded] = useState(false);
 
   // Debug: Log notification count changes
   useEffect(() => {
     console.log('🔴 Notification count changed to:', notificationCount);
   }, [notificationCount]);
 
-  // Load services on component mount
+  // Set up WebSocket for real-time notification updates
+  useEffect(() => {
+    if (isLoggedIn) {
+      console.log('🔌 Setting up WebSocket for real-time notifications');
+      
+      // Initialize notification service
+      notificationService.initialize().then((success) => {
+        if (success) {
+          console.log('✅ Notification service initialized successfully');
+        } else {
+          console.log('❌ Failed to initialize notification service');
+          // Force permission request again
+          notificationService.initialize();
+        }
+      });
+      
+      // Set callback for notification updates
+      setNotificationUpdateCallback((increment: number) => {
+        console.log('📱 WebSocket notification received, incrementing count by:', increment);
+        setNotificationCount(prev => prev + increment);
+      });
+
+      // Initialize WebSocket connection
+      initializeWebSocket();
+
+      // Cleanup on unmount
+      return () => {
+        console.log('🔌 Cleaning up WebSocket connection');
+        disconnectWebSocket();
+      };
+    }
+  }, [isLoggedIn]);
+
+  // Load services on component mount (only once)
   useEffect(() => {
     const loadServices = async () => {
+      if (servicesLoaded) return; // Prevent multiple loads
+      
       try {
+        console.log('🔄 Loading services...');
+        setIsLoading(true); // Show loading state
         const response = await getServices();
         if (response.success) {
           // Add the hardcoded المشاريع service to the dynamic services
@@ -104,24 +179,32 @@ const User4: React.FC = () => {
           
           setServices(allServices);
           setIsNetworkConnected(true);
+          setServicesLoaded(true);
+          console.log('✅ Services loaded successfully:', allServices.length);
         } else {
           // If API response is not successful, don't show any services
           setServices([]);
           setIsNetworkConnected(false);
+          setServicesLoaded(true);
         }
       } catch (error) {
         console.error('Error loading services:', error);
         // If API fails due to network issues, don't show any services
         setServices([]);
         setIsNetworkConnected(false);
+        setServicesLoaded(true);
+      } finally {
+        setIsLoading(false); // Hide loading state
       }
     };
     loadServices();
-  }, []);
+  }, [servicesLoaded]);
 
-  // Check network connectivity when screen is focused
+  // Check network connectivity when screen is focused (only if services not loaded)
   useFocusEffect(
     useCallback(() => {
+      if (servicesLoaded) return; // Skip if services already loaded
+      
       const checkNetworkConnectivity = async () => {
         try {
           const response = await getServices();
@@ -139,7 +222,7 @@ const User4: React.FC = () => {
       };
 
       checkNetworkConnectivity();
-    }, [])
+    }, [servicesLoaded])
   );
 
   // Load user data every time screen is focused (including after auth)
@@ -147,6 +230,7 @@ const User4: React.FC = () => {
     useCallback(() => {
       const loadUserData = async () => {
         try {
+          setIsLoading(true);
           const userData = await getUserData();
           console.log('📱 Home screen focused - checking user data:', userData);
           if (userData && userData.name) {
@@ -165,16 +249,15 @@ const User4: React.FC = () => {
             }
             console.log('✅ User is signed in:', userData.name);
             
-            // Load notification count for logged-in users
-            try {
-              const countResponse = await getNotificationCount(userData._id);
+            // Load notification count for logged-in users (non-blocking)
+            getNotificationCount(userData._id).then(countResponse => {
               if (countResponse.success) {
                 setNotificationCount(countResponse.data.unreadCount);
               }
-            } catch (error) {
+            }).catch(error => {
               console.error('Error loading notification count:', error);
               setNotificationCount(0);
-            }
+            });
           } else {
             setUserName('بك في مشتل');
             setIsLoggedIn(false);
@@ -187,6 +270,8 @@ const User4: React.FC = () => {
           setUserName('بك في مشتل');
           setIsLoggedIn(false);
           setUserLocation('اختر موقعك');
+        } finally {
+          setIsLoading(false);
         }
       };
 
@@ -194,9 +279,11 @@ const User4: React.FC = () => {
     }, [])
   );
 
-  // Refresh notification count every time screen is focused
+  // Refresh notification count every time screen is focused (only for logged-in users)
   useFocusEffect(
     useCallback(() => {
+      if (!isLoggedIn) return; // Skip if user not logged in
+      
       const refreshNotificationCount = async () => {
         try {
           const userData = await getUserData();
@@ -270,6 +357,19 @@ const User4: React.FC = () => {
     console.log('📍 Location saved and updated:', locationText);
   };
 
+  // Manual permission request for testing
+  const requestNotificationPermission = async () => {
+    console.log('🔔 Manually requesting notification permission...');
+    const success = await notificationService.initialize();
+    if (success) {
+      console.log('✅ Permission granted!');
+      alert('Notification permission granted!');
+    } else {
+      console.log('❌ Permission denied!');
+      alert('Notification permission denied!');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
@@ -283,13 +383,15 @@ const User4: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
-        {isLoggedIn && (
-          <TouchableOpacity style={styles.notificationCircle} onPress={handleNotificationPress}>
+        <TouchableOpacity 
+          style={styles.notificationCircle} 
+          onPress={isLoggedIn ? handleNotificationPress : () => router.replace('/(tabs)/auth/login')}
+        >
                          <Image
                source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3239/3239952.png' }}
                style={styles.notificationIconWhite}
              />
-                         {notificationCount > 0 && (
+          {isLoggedIn && notificationCount > 0 && (
                <View style={styles.notificationBadge}>
                  <Text style={styles.notificationBadgeText}>
                    {notificationCount > 99 ? '99+' : notificationCount}
@@ -297,7 +399,6 @@ const User4: React.FC = () => {
                </View>
              )}
           </TouchableOpacity>
-        )}
         <View style={styles.nameAndNotification}>
           <View style={styles.nameSection}>
             <Text style={styles.greetingText}>مرحباً {userName}👋</Text>
@@ -324,16 +425,21 @@ const User4: React.FC = () => {
               />
             </TouchableOpacity>
           </View>
-          {isLoggedIn && (
             <TouchableOpacity 
               style={styles.notificationButton}
-              onPress={handleNotificationPress}
+            onPress={isLoggedIn ? handleNotificationPress : () => router.replace('/(tabs)/auth/login')}
             >
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.notificationButton, { marginLeft: 10, backgroundColor: '#ff6b6b' }]}
+              onPress={requestNotificationPermission}
+            >
+              <Text style={{ color: 'white', fontSize: 12 }}>🔔</Text>
               <Image
                 source={{ uri: "https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/5610980971e7eae9538d65e51902f648fe9062c8?placeholderIfAbsent=true" }}
                 style={styles.notificationIcon}
               />
-              {notificationCount > 0 && (
+            {isLoggedIn && notificationCount > 0 && (
                 <View style={styles.notificationBadge}>
                   <Text style={styles.notificationBadgeText}>
                     {notificationCount > 99 ? '99+' : notificationCount}
@@ -341,7 +447,6 @@ const User4: React.FC = () => {
                 </View>
               )}
             </TouchableOpacity>
-          )}
         </View>
       </View>
 
@@ -354,7 +459,17 @@ const User4: React.FC = () => {
               <Banner images={bannerImages} />
 
               {/* Services Section */}
-              {services.length > 0 && (
+              {!servicesLoaded ? (
+                <View style={styles.servicesContainer}>
+                  <View style={styles.servicesHeader}>
+                    <Text style={styles.servicesTitle}>الخدمات الزراعية</Text>
+                  </View>
+                  <View style={styles.servicesLoadingContainer}>
+                    <View style={styles.servicesLoadingSpinner} />
+                    <Text style={styles.servicesLoadingText}>جاري تحميل الخدمات...</Text>
+                  </View>
+                </View>
+              ) : services.length > 0 ? (
                 <View style={styles.servicesContainer}>
                   <View style={styles.servicesHeader}>
                     <Text style={styles.servicesTitle}>الخدمات الزراعية</Text>
@@ -385,7 +500,7 @@ const User4: React.FC = () => {
                     </View>
                   </View>
                 </View>
-              )}
+              ) : null}
             </>
           ) : (
             <View style={styles.networkErrorContainer}>
@@ -505,6 +620,7 @@ const styles = StyleSheet.create({
   nameSection: {
     alignItems: 'flex-end',
     flex: 1,
+    marginRight: 10,
   },
 
   greetingText: {
@@ -515,6 +631,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     marginRight: 0,
     width: '100%',
+    alignSelf: 'flex-end',
   },
 
   locationRow: {
@@ -523,7 +640,7 @@ const styles = StyleSheet.create({
   },
 
   locationText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#ffffff',
     textAlign: 'right',
     marginRight: 5,
@@ -608,6 +725,17 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+
+  imageErrorContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
   },
 
   serviceTitleContainer: {
@@ -703,6 +831,45 @@ const styles = StyleSheet.create({
     color: '#AAAAAA',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingSpinner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#e0e0e0',
+    borderTopColor: '#4CAF50',
+    marginBottom: 16,
+  },
+  servicesLoadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  servicesLoadingSpinner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: '#f0f0f0',
+    borderTopColor: '#4CAF50',
+    marginBottom: 20,
+  },
+  servicesLoadingText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });
 

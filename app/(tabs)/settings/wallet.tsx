@@ -79,6 +79,14 @@ const Wallet: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
+        <View style={styles.navContent}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/settings')}>
+            <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>محفظتي</Text>
+          </View>
+        </View>
         <View style={styles.walletInfoHeaderRow}>
           <MaterialIcons name="account-balance-wallet" size={16} color="#fff" style={{ marginLeft: 2 }} />
           <Text style={styles.walletInfoHeaderLabel}>محفظتي</Text>
@@ -87,10 +95,6 @@ const Wallet: React.FC = () => {
             {loading ? '...' : `${((walletData?.balance || 0).toFixed(2))}`}
           </Text>
         </View>
-        <Text style={styles.headerTitle}>محفظتي</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/settings')}>
-          <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
       </View>
 
       {/*/!* Wallet Info Row *!/*/}
@@ -184,12 +188,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 10,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -197,19 +198,34 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: -1,
   },
+  navContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    right: 0,
+    padding: 8,
+    zIndex: 1,
+    top: 0,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    flex: 1,
   },
   walletInfoHeaderRow: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
+    marginTop: 10,
   },
   walletInfoRow: {
     flexDirection: 'row-reverse',

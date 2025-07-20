@@ -2,15 +2,17 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated } from 'react-native';
 import { getUserData } from '../../services/api';
 
 export default function ServiceDetailsScreen() {
   const router = useRouter();
   const { id, name, image, description } = useLocalSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
-  // Check authentication status
+  // Check authentication status and reset image state
   useFocusEffect(
     useCallback(() => {
       const checkAuthStatus = async () => {
@@ -21,8 +23,13 @@ export default function ServiceDetailsScreen() {
           setIsLoggedIn(false);
         }
       };
+      
+      // Reset image state when screen is focused
+      fadeAnim.setValue(0);
+      setImageError(false);
+      
       checkAuthStatus();
-    }, [])
+    }, [id, image]) // Add dependencies to re-run when id or image changes
   );
 
   // Example features for each service
@@ -71,22 +78,42 @@ export default function ServiceDetailsScreen() {
 
       <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.bannerContainer}>
-          <Image 
-            source={{ uri: image as string }} 
-            style={styles.bannerImageFull}
+          <Animated.Image 
+            key={`${id}-${image}-${Date.now()}`} // More unique key to force re-render
+            source={{ 
+              uri: image as string,
+              cache: 'reload' // Force reload to prevent showing old image
+            }} 
+            style={[
+              styles.bannerImageFull,
+              { opacity: fadeAnim }
+            ]}
             resizeMode="cover"
+            onLoadStart={() => {
+              fadeAnim.setValue(0);
+              setImageError(false);
+            }}
+            onLoad={() => {
+              Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+              }).start();
+            }}
+            onError={() => {
+              setImageError(true);
+              fadeAnim.setValue(0);
+            }}
           />
+          {imageError && (
+            <View style={styles.imageErrorContainer}>
+              <FontAwesome5 name="image" size={40} color="#ccc" />
+              <Text style={styles.imageErrorText}>فشل في تحميل الصورة</Text>
+            </View>
+          )}
         </View>
         <View style={styles.textSection}>
           <Text style={styles.titleLarge}>{name}</Text>
-          <View style={styles.ratingRow}>
-            <Text style={styles.ratingText}>(4.2)</Text>
-            <FontAwesome5 name="star" size={14} color="#FFD700" />
-            <FontAwesome5 name="star" size={14} color="#FFD700" />
-            <FontAwesome5 name="star" size={14} color="#FFD700" />
-            <FontAwesome5 name="star" size={14} color="#FFD700" />
-            <FontAwesome5 name="star-half-alt" size={14} color="#FFD700" />
-          </View>
         </View>
         <View style={styles.cardContent}>
           <View style={styles.divider} />
@@ -132,7 +159,7 @@ const styles = StyleSheet.create({
   navBar: {
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 20,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -180,6 +207,24 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     marginBottom: 0,
   },
+
+  imageErrorContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    zIndex: 1,
+  },
+  imageErrorText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
+  },
   textSection: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -226,16 +271,7 @@ const styles = StyleSheet.create({
     color: '#222',
     textAlign: 'right',
   },
-  ratingRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#888',
-    marginLeft: 6,
-  },
+
   titleLarge: {
     fontSize: 22,
     fontWeight: 'bold',

@@ -84,7 +84,13 @@ const User17: React.FC = () => {
     });
 
     socket.on('order_status_update', (data: any) => {
-      console.log('Order status update received:', data);
+      console.log('📱 Order status update received:', data);
+      // Refresh orders to show updated status
+      fetchOrders();
+    });
+
+    socket.on('order_completed', (data: { orderId: string }) => {
+      console.log('📱 Order completed event received:', data.orderId);
       // Refresh orders to show updated status
       fetchOrders();
     });
@@ -171,6 +177,7 @@ const User17: React.FC = () => {
   // Fetch user orders
   const fetchOrders = async () => {
     try {
+      console.log('🔍 Fetching user orders...');
       const response = await getUserServiceOrders();
       if (response.success) {
         console.log('🔍 Fetched orders:', response.data.map((order: ServiceOrder) => ({
@@ -180,9 +187,21 @@ const User17: React.FC = () => {
           hasFarmer: !!order.farmer
         })));
         setOrders(response.data);
+      } else {
+        console.log('⚠️ No orders found or API returned success: false');
+        setOrders([]);
       }
-    } catch (error) {
-      console.error('Error fetching orders:', error);
+    } catch (error: any) {
+      console.error('❌ Error fetching orders:', error);
+      if (error.message === 'يرجى تسجيل الدخول أولاً') {
+        console.log('🔐 Redirecting to login due to authentication error');
+        router.replace('/(tabs)/auth/login');
+      } else {
+        console.log('📱 Setting empty orders due to error');
+        setOrders([]);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -193,18 +212,21 @@ const User17: React.FC = () => {
     useCallback(() => {
       const checkAuthStatus = async () => {
         try {
+          console.log('🔍 Checking authentication status...');
           const userData = await getUserData();
-          if (!userData || !userData.name) {
+          if (!userData || !userData.name || !userData.token) {
+            console.log('⚠️ User not authenticated, redirecting to login');
             router.replace('/(tabs)/auth/login');
             return;
           }
+          console.log('✅ User authenticated:', userData.name);
           setIsLoggedIn(true);
-          setIsLoading(false);
           
           // Fetch services and orders
           await fetchServices();
           await fetchOrders();
         } catch (error) {
+          console.error('❌ Error checking authentication:', error);
           router.replace('/(tabs)/auth/login');
         }
       };

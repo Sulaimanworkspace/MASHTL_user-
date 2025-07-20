@@ -17,21 +17,38 @@ let API_BASE_URL = POSSIBLE_URLS[0]; // Start with Android Emulator
 const testAPIConnection = async () => {
   for (const url of POSSIBLE_URLS) {
     try {
-      console.log(`🔍 Testing API URL: ${url}`);
-      const response = await axios.get(`${url.replace('/api', '')}`, { timeout: 5000 });
-      console.log(`✅ Found working API URL: ${url}`);
+      console.log(`Testing API URL: ${url}`);
+      // Test the root endpoint by removing /api and adding /
+      const testUrl = url.replace('/api', '') + '/';
+      const response = await axios.get(testUrl, { timeout: 5000 });
+      console.log(`Found working API URL: ${url}`);
       API_BASE_URL = url;
       return url;
     } catch (error) {
-      console.log(`❌ Failed to connect to: ${url}`);
+      console.log(`Failed to connect to: ${url}`);
     }
   }
-  console.error('❌ No working API URL found. Using default:', POSSIBLE_URLS[0]);
+  console.error('No working API URL found. Using default:', POSSIBLE_URLS[0]);
   return POSSIBLE_URLS[0];
 };
 
-// Test connection on app start
-testAPIConnection();
+// Test connection on app start (only in development)
+if (__DEV__) {
+  testAPIConnection();
+}
+
+// Export test function for manual testing
+export const testConnection = async () => {
+  try {
+    console.log('Testing API connection...');
+    const result = await testAPIConnection();
+    console.log('Connection test result:', result);
+    return result;
+  } catch (error) {
+    console.error('Connection test failed:', error);
+    return null;
+  }
+};
 
 const api = axios.create({
   get baseURL() { return API_BASE_URL; },
@@ -44,8 +61,8 @@ const api = axios.create({
 // Add request/response interceptors for debugging and authentication
 api.interceptors.request.use(
   async (config) => {
-    console.log('🚀 API Request:', config.method?.toUpperCase(), (config.baseURL || '') + (config.url || ''));
-    console.log('📦 Request data:', config.data);
+    console.log('API Request:', config.method?.toUpperCase(), (config.baseURL || '') + (config.url || ''));
+    console.log('Request data:', config.data);
     
     // Add authentication token if available
     try {
@@ -54,8 +71,12 @@ api.interceptors.request.use(
         const user = JSON.parse(userData);
         if (user.token) {
           config.headers.Authorization = `Bearer ${user.token}`;
-          console.log('🔐 Added auth token to request');
+          console.log('Added auth token to request');
+        } else {
+          console.log('No token found in user data');
         }
+      } else {
+        console.log('No user data found in AsyncStorage');
       }
     } catch (error) {
       console.error('Error getting auth token:', error);
@@ -64,25 +85,25 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('❌ Request error:', error);
+    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', response.status, response.config.url);
-    console.log('📦 Response data:', response.data);
+    console.log('API Response:', response.status, response.config.url);
+    console.log('Response data:', response.data);
     return response;
   },
   (error) => {
-    console.error('❌ API Error:', error.message);
+    console.error('API Error:', error.message);
     if (error.response) {
-      console.error('📦 Error response:', error.response.data);
-      console.error('📦 Error status:', error.response.status);
+      console.error('Error response:', error.response.data);
+      console.error('Error status:', error.response.status);
     } else if (error.request) {
-      console.error('📦 No response received - Check if server is running on correct port');
-      console.error('📦 Current API URL:', API_BASE_URL);
+      console.error('No response received - Check if server is running on correct port');
+      console.error('Current API URL:', API_BASE_URL);
       // Convert network error to Arabic message
       error.message = 'فشل في الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى';
     }
@@ -93,11 +114,11 @@ api.interceptors.response.use(
 // User storage functions
 export const storeUserData = async (userData: any) => {
   try {
-    console.log('🔄 Storing user data to AsyncStorage:', userData);
+    console.log('Storing user data to AsyncStorage:', userData);
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-    console.log('✅ User data stored successfully');
+    console.log('User data stored successfully');
   } catch (error) {
-    console.error('❌ Error storing user data:', error);
+    console.error('Error storing user data:', error);
   }
 };
 
@@ -105,15 +126,25 @@ export const getUserData = async () => {
   try {
     const userData = await AsyncStorage.getItem('user_data');
     const parsedData = userData ? JSON.parse(userData) : null;
-    console.log('📱 Retrieved user data from AsyncStorage:', parsedData?.location ? {
+    console.log('Retrieved user data from AsyncStorage:', parsedData?.location ? {
       address: parsedData.location.address,
       latitude: parsedData.location.latitude,
       longitude: parsedData.location.longitude
     } : 'No location data');
     return parsedData;
   } catch (error) {
-    console.error('❌ Error getting user data:', error);
+    console.error('Error getting user data:', error);
     return null;
+  }
+};
+
+export const isUserAuthenticated = async () => {
+  try {
+    const userData = await getUserData();
+    return userData && userData.token;
+  } catch (error) {
+    console.error('Error checking authentication:', error);
+    return false;
   }
 };
 
@@ -122,13 +153,35 @@ export const refreshUserDataFromServer = async () => {
     const response = await api.get('/auth/user-profile');
     if (response.data && response.data.success) {
       await AsyncStorage.setItem('user_data', JSON.stringify(response.data.data));
-      console.log('✅ User data refreshed from server');
+      console.log('User data refreshed from server');
       return response.data.data;
     }
     return null;
   } catch (error) {
     console.error('Error refreshing user data from server:', error);
     return null;
+  }
+};
+
+export const updateUserProfile = async (updateData: {
+  name?: string;
+  phone?: string;
+  email?: string;
+}) => {
+  try {
+    const response = await api.put('/auth/profile', updateData);
+    if (response.data && response.data.success) {
+      // Update local storage with new data
+      const currentUserData = await getUserData();
+      const updatedUserData = { ...currentUserData, ...response.data.data };
+      await AsyncStorage.setItem('user_data', JSON.stringify(updatedUserData));
+      console.log('User profile updated successfully');
+      return response.data;
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
   }
 };
 
@@ -157,7 +210,7 @@ export const sendOTP = async (phone: string, type?: string) => {
     const response = await api.post('/auth/send-otp', { phone, type });
     return response.data;
   } catch (error) {
-    console.log('🔄 Retrying with different API URL...');
+    console.log('Retrying with different API URL...');
     await testAPIConnection();
     const response = await api.post('/auth/send-otp', { phone, type });
     return response.data;
@@ -222,7 +275,7 @@ export const updateUserLocation = async (userId: string, locationData: {
 }) => {
   try {
     const response = await api.put(`/auth/update-location/${userId}`, locationData);
-    console.log('✅ Location updated on server:', response.data);
+    console.log('Location updated on server:', response.data);
     return response.data;
   } catch (error: any) {
     throw error;
@@ -255,9 +308,16 @@ export const createServiceOrder = async (orderData: {
 
 export const getUserServiceOrders = async () => {
   try {
+    console.log('Fetching user service orders...');
     const response = await api.get('/service-orders/my-orders');
+    console.log('User service orders fetched successfully:', response.data);
     return response.data;
   } catch (error: any) {
+    console.error('Error fetching user service orders:', error);
+    if (error.response?.status === 401) {
+      console.log('Authentication required - user needs to login');
+      error.message = 'يرجى تسجيل الدخول أولاً';
+    }
     throw error;
   }
 };
@@ -276,9 +336,16 @@ export const cancelServiceOrder = async (orderId: string) => {
 // Chat API functions
 export const getChatHistory = async (orderId: string) => {
   try {
+    console.log('Fetching chat history for order:', orderId);
     const response = await api.get(`/chat/history/${orderId}`);
+    console.log('Chat history fetched successfully:', response.data);
     return response.data;
   } catch (error: any) {
+    console.error('Error fetching chat history:', error);
+    if (error.response?.status === 401) {
+      console.log('Authentication required - user needs to login');
+      error.message = 'يرجى تسجيل الدخول أولاً';
+    }
     throw error;
   }
 };
@@ -333,16 +400,16 @@ export const getUserWallet = async () => {
 // Services API functions
 export const getServices = async () => {
   try {
-    console.log('🔍 Fetching services from backend...');
+    console.log('Fetching services from backend...');
     const response = await api.get('/services');
-    console.log('✅ Services fetched successfully:', response.data);
+    console.log('Services fetched successfully:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error fetching services:', error);
+    console.error('Error fetching services:', error);
     
     // If backend is not available, return empty services array
     // The المشاريع service will be added hardcoded in the Home component
-    console.log('🔄 No fallback services - returning empty array');
+    console.log('No fallback services - returning empty array');
     return {
       success: false,
       data: [],

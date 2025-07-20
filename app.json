@@ -20,9 +20,11 @@
       },
       "config": {
         "googleMapsApiKey": "AIzaSyDemoKeyForDevelopment123456789"
-      }
+      },
+      "bundleIdentifier": "com.anonymous.mashtl"
     },
     "android": {
+      "icon": "./assets/images/icon.jpg",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.jpg",
         "backgroundColor": "#ffffff"
@@ -44,10 +46,25 @@
       "favicon": "./assets/images/icon.jpg"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.jpg",
+          "color": "#2E8B57",
+          "mode": "production"
+        }
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "tsconfigPaths": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
     }
   }
 }

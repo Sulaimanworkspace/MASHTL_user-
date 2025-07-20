@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   navBar: {
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 20,
     position: 'relative',
     overflow: 'hidden',
   },

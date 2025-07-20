@@ -1,8 +1,8 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback, useEffect } from 'react';
-import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, RefreshControl, Animated } from 'react-native';
 import { getUserData, getUserServiceOrders, getUnreadMessageCount } from '../../services/api';
 
 interface ChatOrder {
@@ -27,18 +27,42 @@ const ChatInboxScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [chatOrders, setChatOrders] = useState<ChatOrder[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [imageErrors, setImageErrors] = useState<{[key: string]: boolean}>({});
+  const fadeAnimRefs = useRef<{[key: string]: Animated.Value}>({});
 
-  // Fetch chat orders (orders with farmers)
+  // Fetch chat orders (orders with farmers but not completed)
   const fetchChatOrders = async () => {
     try {
+      console.log('🔍 Fetching chat orders...');
       const response = await getUserServiceOrders();
       if (response.success) {
-        // Filter orders that have farmers (accepted orders)
-        const ordersWithFarmers = response.data.filter((order: ChatOrder) => order.farmer);
+        // Filter orders that have farmers (accepted orders) and are not completed
+        const ordersWithFarmers = response.data.filter((order: ChatOrder) => 
+          order.farmer && order.status !== 'completed'
+        );
+        console.log('📱 User chat orders data:', ordersWithFarmers.map((o: any) => ({ 
+          id: o._id, 
+          serviceTitle: o.serviceTitle, 
+          title: o.title,
+          serviceType: o.serviceType,
+          status: o.status
+        })));
         setChatOrders(ordersWithFarmers);
+      } else {
+        console.log('⚠️ No orders found or API returned success: false');
+        setChatOrders([]);
       }
-    } catch (error) {
-      console.error('Error fetching chat orders:', error);
+    } catch (error: any) {
+      console.error('❌ Error fetching chat orders:', error);
+      if (error.message === 'يرجى تسجيل الدخول أولاً') {
+        console.log('🔐 Redirecting to login due to authentication error');
+        router.replace('/(tabs)/auth/login');
+      } else {
+        console.log('📱 Setting empty chat orders due to error');
+        setChatOrders([]);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,15 +71,19 @@ const ChatInboxScreen: React.FC = () => {
     useCallback(() => {
       const checkAuthStatus = async () => {
         try {
+          setIsLoading(true);
+          console.log('🔍 Checking authentication status...');
           const userData = await getUserData();
-          if (!userData || !userData.name) {
+          if (!userData || !userData.name || !userData.token) {
+            console.log('⚠️ User not authenticated, redirecting to login');
             router.replace('/(tabs)/auth/login');
             return;
           }
+          console.log('✅ User authenticated:', userData.name);
           setIsLoggedIn(true);
-          setIsLoading(false);
           await fetchChatOrders();
         } catch (error) {
+          console.error('❌ Error checking authentication:', error);
           router.replace('/(tabs)/auth/login');
         }
       };
@@ -63,44 +91,90 @@ const ChatInboxScreen: React.FC = () => {
     }, [])
   );
 
+  // Listen for order completion events
+  useEffect(() => {
+    const socket = require('socket.io-client')('http://172.20.10.12:9090');
+    
+    socket.on('order_completed', (data: { orderId: string }) => {
+      console.log('📱 User received order_completed event:', data.orderId);
+      setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchChatOrders();
     setRefreshing(false);
   };
 
-  const renderItem = ({ item }: { item: ChatOrder }) => (
-    <TouchableOpacity 
-      style={styles.chatItem} 
-      onPress={() => {
-        if (item.farmer) {
-          router.push({
-            pathname: '/(tabs)/chats/message',
-            params: {
-              orderId: item._id,
-              farmerId: item.farmer._id,
-              farmerName: item.farmer.name,
-              farmerAvatar: item.farmer.avatar
-            }
-          });
-        }
-      }}
-    >
-      <Image
-        source={item.farmer?.avatar ? { uri: item.farmer.avatar } : { uri: 'https://ui-avatars.com/api/?name=Farmer' }}
-        style={styles.avatar}
-      />
-      <View style={styles.chatInfo}>
-        <View style={styles.chatHeader}>
-          <Text style={styles.name}>{item.farmer?.name || 'مزارع'}</Text>
-          <Text style={styles.time}>{new Date(item.createdAt).toLocaleDateString('ar-SA')}</Text>
+  const renderItem = ({ item }: { item: ChatOrder }) => {
+    // Get or create fade animation ref for this item
+    if (!fadeAnimRefs.current[item._id]) {
+      fadeAnimRefs.current[item._id] = new Animated.Value(0);
+    }
+    const fadeAnim = fadeAnimRefs.current[item._id];
+    const imageError = imageErrors[item._id] || false;
+
+    return (
+      <TouchableOpacity 
+        style={styles.chatItem} 
+        onPress={() => {
+          if (item.farmer) {
+            router.push({
+              pathname: '/(tabs)/chats/message',
+              params: {
+                orderId: item._id,
+                farmerId: item.farmer._id,
+                farmerName: item.farmer.name,
+                farmerAvatar: item.farmer.avatar
+              }
+            });
+          }
+        }}
+      >
+        <View style={styles.avatarContainer}>
+          <Animated.Image 
+            source={require('../../../assets/images/icon.jpg')}
+            style={[
+              styles.avatar,
+              { opacity: fadeAnim }
+            ]}
+            onLoadStart={() => {
+              fadeAnim.setValue(0);
+            }}
+            onLoad={() => {
+              Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+              }).start();
+            }}
+            onError={() => {
+              setImageErrors(prev => ({ ...prev, [item._id]: true }));
+            }}
+          />
+          {imageError && (
+            <View style={styles.imageErrorContainer}>
+              <FontAwesome5 name="image" size={20} color="#ccc" />
+            </View>
+          )}
         </View>
-        <Text style={styles.lastMessage} numberOfLines={1}>
-          {item.lastMessage || `طلب: ${item.serviceTitle}`}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.chatInfo}>
+          <View style={styles.chatHeader}>
+            <Text style={styles.name}>{item.farmer?.name || 'مزارع'}</Text>
+            <Text style={styles.time}>{new Date(item.createdAt).toLocaleDateString('en-US')}</Text>
+          </View>
+          <Text style={styles.lastMessage} numberOfLines={1}>
+            {item.lastMessage || `خدمة: ${(item as any).title || item.serviceTitle || 'خدمة'}`}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   // Don't render anything if not authenticated (prevents flash)
   if (!isLoggedIn && isLoading) {
@@ -150,8 +224,8 @@ const ChatInboxScreen: React.FC = () => {
         ListEmptyComponent={
           <View style={styles.emptyStateContainer}>
             <FontAwesome5 name="comments" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>لا توجد محادثات بعد</Text>
-            <Text style={styles.emptySubtext}>ستظهر المحادثات هنا بعد قبول طلباتك من قبل المزارعين</Text>
+            <Text style={styles.emptyText}>لا توجد محادثات نشطة</Text>
+            <Text style={styles.emptySubtext}>ستظهر المحادثات هنا للطلبات المقبولة والتي لم تكتمل بعد</Text>
           </View>
         }
       />
@@ -209,13 +283,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#eee',
   },
-  avatar: {
+  avatarContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
     backgroundColor: '#e0e0e0',
     marginLeft: 14,
     marginRight: 0,
+    overflow: 'hidden',
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 24,
+  },
+  imageErrorContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#e0e0e0',
   },
   chatInfo: {
     flex: 1,

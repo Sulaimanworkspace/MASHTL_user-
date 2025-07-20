@@ -88,7 +88,7 @@ export default function SplashScreen() {
       // Navigate to main app naturally
       setTimeout(() => {
         router.replace('/(tabs)/Home');
-      }, 3500);
+      }, 2500); // Reduced from 3500ms to 2500ms for faster startup
     };
 
     startAnimations();

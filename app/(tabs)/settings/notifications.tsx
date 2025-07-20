@@ -125,9 +125,9 @@ export default function SettingsNotificationsScreen() {
       
       <View style={styles.notificationIcon}>
         <FontAwesome5 
-          name={item.type === 'welcome' ? 'hand-peace' : 'bell'} 
+          name={item.type === 'welcome' ? 'user-check' : item.type === 'wallet' ? 'wallet' : 'bell'} 
           size={20} 
-          color={Colors.primary} 
+          color={item.type === 'wallet' ? '#666666' : Colors.primary} 
         />
       </View>
     </View>
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   navBar: {
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 20,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginLeft: 12,
   },
   notificationContent: {
     flex: 1,

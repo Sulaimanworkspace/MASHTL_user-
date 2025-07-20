@@ -26,11 +26,14 @@ const Complaints: React.FC = () => {
           end={{ x: 0, y: 1 }}
           pointerEvents="none"
         />
+        <View style={styles.navContent}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/settings')}>
           <MaterialIcons name="arrow-forward" size={24} color="#FFFFFF" />
         </TouchableOpacity>
+          <View style={styles.titleContainer}>
         <Text style={styles.headerTitle}>الشكاوى</Text>
-        <View style={{width: 32}} />
+          </View>
+        </View>
       </View>
 
       {/* Complaints Content */}
@@ -52,9 +55,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
@@ -65,15 +65,29 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: -1,
   },
+  navContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    right: 0,
+    padding: 8,
+    zIndex: 1,
+    top: 0,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    flex: 1,
-  },
-  backButton: {
-    padding: 8,
   },
   content: {
     flex: 1,
