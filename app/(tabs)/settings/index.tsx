@@ -12,6 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import { getUserData, clearUserData } from '../../services/api';
+import webSocketService from '../../services/websocket';
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
@@ -96,6 +97,8 @@ const User19: React.FC = () => {
 
   const handleLogout = async () => {
     try {
+      // Clear WebSocket connection first
+      await webSocketService.clearUserData();
       await clearUserData();
       setIsLoggedIn(false);
       setShowLogoutModal(false); // Close the modal

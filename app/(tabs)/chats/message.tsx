@@ -3,8 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
-import io from 'socket.io-client';
 import { getChatHistory, sendChatMessage, getUserData } from '../../services/api';
+import webSocketService from '../../services/websocket';
 
 interface Message {
   _id: string;
@@ -42,11 +42,10 @@ const MessageScreen: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [socket, setSocket] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
 
-  // Initialize socket connection and load chat history
+  // Initialize WebSocket connection and load chat history
   useEffect(() => {
     const initializeChat = async () => {
       try {
@@ -66,32 +65,22 @@ const MessageScreen: React.FC = () => {
           }
         }
 
-        // Initialize Socket.IO connection
-        const socketUrl = 'http://172.20.10.12:9090'; // Use the same IP as your API
-        console.log('🔌 User attempting to connect to socket:', socketUrl);
-        const newSocket = io(socketUrl);
+        // Initialize WebSocket connection
+        await webSocketService.initialize(userData._id);
         
-        newSocket.on('connect', () => {
-          console.log('Connected to chat server');
-          newSocket.emit('join_chat', orderId);
-        });
-        newSocket.on('connect_error', (error: any) => {
-          console.log('❌ User socket connection error:', error);
-        });
+        // Join chat room
+        webSocketService.joinChat(orderId);
 
-        newSocket.on('new_message', (message: Message) => {
+        // Listen for new messages
+        webSocketService.on('new_message', (message: Message) => {
+          console.log('📱 User received new message:', message);
           // Only add message if it's not from the current user (to avoid duplicates)
-          if (message.sender._id !== currentUser._id) {
+          if (message.sender._id !== userData._id) {
             setMessages(prev => [...prev, message]);
             setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
           }
         });
 
-        newSocket.on('disconnect', () => {
-          console.log('Disconnected from chat server');
-        });
-
-        setSocket(newSocket);
         setIsLoading(false);
       } catch (error) {
         console.error('Error initializing chat:', error);
@@ -103,10 +92,9 @@ const MessageScreen: React.FC = () => {
     initializeChat();
 
     return () => {
-      if (socket) {
-        socket.emit('leave_chat', orderId);
-        socket.disconnect();
-      }
+      // Leave chat room and clean up event listeners
+      webSocketService.leaveChat();
+      webSocketService.off('new_message');
     };
   }, [orderId]);
 

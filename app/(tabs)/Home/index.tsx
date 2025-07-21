@@ -14,8 +14,9 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { getUserData, getNotificationCount, getServices } from '../../services/api';
-import { initializeWebSocket, disconnectWebSocket, setNotificationUpdateCallback } from '../../services/websocket';
+import webSocketService from '../../services/websocket';
 import { notificationService } from '../../services/notifications';
+import * as Notifications from 'expo-notifications';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 import LocationPickerModal from '../../components/LocationPickerModal';
@@ -126,24 +127,55 @@ const User4: React.FC = () => {
           console.log('✅ Notification service initialized successfully');
         } else {
           console.log('❌ Failed to initialize notification service');
-          // Force permission request again
-          notificationService.initialize();
+          // Request permission manually
+          requestNotificationPermission().then(async (granted) => {
+            if (granted) {
+              await notificationService.initialize();
+            }
+          });
         }
       });
       
-      // Set callback for notification updates
-      setNotificationUpdateCallback((increment: number) => {
-        console.log('📱 WebSocket notification received, incrementing count by:', increment);
-        setNotificationCount(prev => prev + increment);
-      });
-
       // Initialize WebSocket connection
+      const initializeWebSocket = async () => {
+        try {
+          await webSocketService.initialize();
+          
+          // Listen for new notifications
+          webSocketService.on('new_notification', (notification: any) => {
+            console.log('📱 WebSocket notification received:', notification);
+            setNotificationCount(prev => prev + 1);
+            
+            // Send local notification for dropdown
+            notificationService.sendLocalNotification({
+              title: notification.title || 'رسالة جديدة',
+              body: notification.message || 'لديك رسالة جديدة من المزارع',
+              data: notification
+            });
+          });
+        } catch (error) {
+          console.error('❌ Error initializing WebSocket:', error);
+        }
+      };
+
       initializeWebSocket();
+
+      // Set up notification response listener (when user taps notification)
+      const notificationResponseListener = notificationService.addNotificationResponseReceivedListener((response) => {
+        console.log('📱 Notification tapped:', response);
+        const data = response.notification.request.content.data;
+        
+        // Navigate to chat if it's a chat notification
+        if (data && data.type === 'chat' && data.orderId) {
+          router.push('/(tabs)/chats');
+        }
+      });
 
       // Cleanup on unmount
       return () => {
         console.log('🔌 Cleaning up WebSocket connection');
-        disconnectWebSocket();
+        webSocketService.off('new_notification');
+        notificationResponseListener?.remove();
       };
     }
   }, [isLoggedIn]);
@@ -358,7 +390,7 @@ const User4: React.FC = () => {
   };
 
   // Manual permission request for testing
-  const requestNotificationPermission = async () => {
+  const requestNotificationPermission = async (): Promise<boolean> => {
     console.log('🔔 Manually requesting notification permission...');
     const success = await notificationService.initialize();
     if (success) {
@@ -368,6 +400,7 @@ const User4: React.FC = () => {
       console.log('❌ Permission denied!');
       alert('Notification permission denied!');
     }
+    return success;
   };
 
   return (

@@ -1,199 +1,251 @@
 import io from 'socket.io-client';
-import { getUserData } from './api';
-import { notificationService, sendNotificationFromWebSocket } from './notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// WebSocket connection
-let socket: any = null;
-let isConnected = false;
+class WebSocketService {
+  private socket: any = null;
+  private isConnecting: boolean = false;
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
+  private reconnectDelay: number = 1000;
+  private currentUserId: string | null = null;
+  private currentOrderId: string | null = null;
 
-// List of possible WebSocket URLs to try
-const POSSIBLE_WS_URLS = [
-  'http://172.20.10.12:9090',   // Your Mac's IP address
-  'http://10.0.2.2:9090',        // Android Emulator
-  'http://localhost:9090',       // iOS Simulator
-  'http://127.0.0.1:9090',      // iOS Simulator alternative
-  'http://192.168.1.100:9090',  // Common local network IP
-  'http://192.168.0.100:9090',  // Alternative local network IP
-];
+  private socketUrl = 'http://172.20.10.12:9090';
 
-let WS_BASE_URL = POSSIBLE_WS_URLS[0];
+  // Singleton pattern
+  private static instance: WebSocketService;
+  
+  public static getInstance(): WebSocketService {
+    if (!WebSocketService.instance) {
+      WebSocketService.instance = new WebSocketService();
+    }
+    return WebSocketService.instance;
+  }
 
-// Callback function type for notification updates
-type NotificationUpdateCallback = (count: number) => void;
-
-// Store callback function
-let notificationUpdateCallback: NotificationUpdateCallback | null = null;
-
-// Function to test which WebSocket URL works
-const testWebSocketURL = async (): Promise<string> => {
-  for (const url of POSSIBLE_WS_URLS) {
+  // Initialize connection
+  public async initialize(userId?: string): Promise<void> {
     try {
-      console.log(`Testing WebSocket URL: ${url}`);
-      const testSocket = io(url, { timeout: 5000 });
-      
-      return new Promise<string>((resolve) => {
-        testSocket.on('connect', () => {
-          console.log(`Found working WebSocket URL: ${url}`);
-          testSocket.disconnect();
-          WS_BASE_URL = url;
-          resolve(url);
-        });
-        
-        testSocket.on('connect_error', () => {
-          console.log(`Failed to connect to WebSocket: ${url}`);
-          testSocket.disconnect();
-          resolve(POSSIBLE_WS_URLS[0]);
-        });
-        
-        setTimeout(() => {
-          testSocket.disconnect();
-          resolve(POSSIBLE_WS_URLS[0]);
-        }, 3000);
-      });
-    } catch (error) {
-      console.log(`Failed to test WebSocket URL: ${url}`);
-    }
-  }
-  console.error('No working WebSocket URL found. Using default:', POSSIBLE_WS_URLS[0]);
-  return POSSIBLE_WS_URLS[0];
-};
-
-// Initialize WebSocket connection
-export const initializeWebSocket = async (onNotificationUpdate?: NotificationUpdateCallback) => {
-  try {
-    if (socket && isConnected) {
-      console.log('WebSocket already connected');
-      return socket;
-    }
-
-    // Store callback function
-    if (onNotificationUpdate) {
-      notificationUpdateCallback = onNotificationUpdate;
-    }
-
-    // Test connection and get working URL
-    await testWebSocketURL();
-    
-    console.log('🔌 Initializing WebSocket connection to:', WS_BASE_URL);
-    
-    socket = io(WS_BASE_URL, {
-      transports: ['websocket', 'polling'],
-      timeout: 10000,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
-    // Connection event handlers
-    socket.on('connect', () => {
-      console.log('🔌 WebSocket connected successfully');
-      isConnected = true;
-      
-      // Join user room for notifications
-      joinUserRoom();
-    });
-
-    socket.on('disconnect', () => {
-      console.log('🔌 WebSocket disconnected');
-      isConnected = false;
-    });
-
-    socket.on('connect_error', (error: any) => {
-      console.error('🔌 WebSocket connection error:', error);
-      isConnected = false;
-    });
-
-    // Notification event handler
-    socket.on('new_notification', (notification: any) => {
-      console.log('📱 Received new notification:', notification);
-      
-      // Send professional push notification
-      sendNotificationFromWebSocket({
-        title: notification.title || 'إشعار جديد',
-        body: notification.message || 'لديك إشعار جديد',
-        data: notification
-      });
-      
-      // Update notification count immediately
-      if (notificationUpdateCallback) {
-        // Increment the current count by 1 for new notifications
-        notificationUpdateCallback(1); // This will increment the count
+      // If no userId provided, try to get from storage
+      if (!userId) {
+        const userData = await AsyncStorage.getItem('user_data');
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          userId = parsed._id;
+        }
       }
-    });
 
-    return socket;
-  } catch (error) {
-    console.error('Error initializing WebSocket:', error);
-    return null;
-  }
-};
+      // If still no userId, don't connect
+      if (!userId) {
+        console.log('🔌 No user ID available, skipping WebSocket connection');
+        return;
+      }
 
-// Join user room for notifications
-const joinUserRoom = async () => {
-  try {
-    const userData = await getUserData();
-    if (userData && userData._id && socket) {
-      socket.emit('join_user_room', userData._id);
-      console.log(`👤 Joined user room: user_${userData._id}`);
+      // If already connected to the same user, don't reconnect
+      if (this.socket && this.currentUserId === userId && this.socket.connected) {
+        console.log('🔌 Already connected to same user, skipping reconnection');
+        return;
+      }
+
+      // Disconnect existing connection if different user
+      if (this.socket && this.currentUserId !== userId) {
+        console.log('🔌 Different user detected, disconnecting existing socket');
+        this.disconnect();
+      }
+
+      // Connect if not already connecting
+      if (!this.isConnecting && (!this.socket || !this.socket.connected)) {
+        await this.connect(userId);
+      }
+    } catch (error) {
+      console.error('❌ Error initializing WebSocket:', error);
     }
-  } catch (error) {
-    console.error('Error joining user room:', error);
   }
-};
 
-// Leave user room
-export const leaveUserRoom = async () => {
-  try {
-    const userData = await getUserData();
-    if (userData && userData._id && socket) {
-      socket.emit('leave_user_room', userData._id);
-      console.log(`👤 Left user room: user_${userData._id}`);
+  // Connect to WebSocket
+  private async connect(userId: string): Promise<void> {
+    if (this.isConnecting) {
+      console.log('🔌 Already connecting, skipping...');
+      return;
     }
-  } catch (error) {
-    console.error('Error leaving user room:', error);
+
+    this.isConnecting = true;
+    console.log('🔌 Connecting to WebSocket...');
+
+    try {
+      this.socket = io(this.socketUrl, {
+        transports: ['websocket', 'polling'],
+        timeout: 10000,
+        forceNew: true
+      });
+
+      this.socket.on('connect', () => {
+        console.log('✅ WebSocket connected successfully');
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
+        this.currentUserId = userId;
+        
+        // Join user room for notifications
+        this.socket?.emit('join_user_room', userId);
+        console.log(`👤 Joined user room: user_${userId}`);
+      });
+
+      this.socket.on('connect_error', (error: any) => {
+        console.error('❌ WebSocket connection error:', error);
+        this.isConnecting = false;
+        this.handleReconnect(userId);
+      });
+
+      this.socket.on('disconnect', (reason: any) => {
+        console.log('🔌 WebSocket disconnected:', reason);
+        this.isConnecting = false;
+        
+        if (reason === 'io server disconnect') {
+          // Server disconnected us, try to reconnect
+          this.handleReconnect(userId);
+        }
+      });
+
+      this.socket.on('error', (error: any) => {
+        console.error('❌ WebSocket error:', error);
+      });
+
+    } catch (error) {
+      console.error('❌ Error creating WebSocket connection:', error);
+      this.isConnecting = false;
+      this.handleReconnect(userId);
+    }
   }
-};
 
-// Update notification callback
-export const setNotificationUpdateCallback = (callback: NotificationUpdateCallback) => {
-  notificationUpdateCallback = callback;
-};
+  // Handle reconnection
+  private handleReconnect(userId: string): void {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('❌ Max reconnection attempts reached');
+      return;
+    }
 
-// Disconnect WebSocket
-export const disconnectWebSocket = () => {
-  if (socket) {
-    console.log('🔌 Disconnecting WebSocket');
-    socket.disconnect();
-    socket = null;
-    isConnected = false;
+    this.reconnectAttempts++;
+    const delay = this.reconnectDelay * this.reconnectAttempts;
+    
+    console.log(`🔄 Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    
+    setTimeout(() => {
+      this.connect(userId);
+    }, delay);
   }
-  notificationUpdateCallback = null;
-};
 
-// Get connection status
-export const getWebSocketStatus = () => {
-  return {
-    isConnected,
-    socket: socket
-  };
-};
+  // Join chat room
+  public joinChat(orderId: string): void {
+    if (!this.socket || !this.socket.connected) {
+      console.log('❌ Socket not connected, cannot join chat');
+      return;
+    }
 
-// Reconnect WebSocket
-export const reconnectWebSocket = async () => {
-  console.log('🔌 Attempting to reconnect WebSocket');
-  disconnectWebSocket();
-  return await initializeWebSocket(notificationUpdateCallback || undefined);
-};
+    if (this.currentOrderId === orderId) {
+      console.log('🔌 Already in this chat room');
+      return;
+    }
 
-// Export test function
-export const testWebSocketConnection = async (): Promise<string | null> => {
-  try {
-    console.log('Testing WebSocket connection...');
-    const result = await testWebSocketURL();
-    console.log('WebSocket connection test result:', result);
-    return result;
-  } catch (error) {
-    console.error('WebSocket connection test failed:', error);
-    return null;
+    // Leave previous chat room if any
+    if (this.currentOrderId) {
+      this.leaveChat();
+    }
+
+    this.socket.emit('join_chat', orderId);
+    this.currentOrderId = orderId;
+    console.log(`👥 Joined chat room: chat_${orderId}`);
   }
-}; 
+
+  // Leave chat room
+  public leaveChat(): void {
+    if (!this.socket || !this.socket.connected || !this.currentOrderId) {
+      return;
+    }
+
+    this.socket.emit('leave_chat', this.currentOrderId);
+    console.log(`👥 Left chat room: chat_${this.currentOrderId}`);
+    this.currentOrderId = null;
+  }
+
+  // Listen for events
+  public on(event: string, callback: (...args: any[]) => void): void {
+    if (!this.socket) {
+      console.log('❌ Socket not available for event listener');
+      return;
+    }
+
+    this.socket.on(event, callback);
+  }
+
+  // Remove event listener
+  public off(event: string, callback?: (...args: any[]) => void): void {
+    if (!this.socket) {
+      return;
+    }
+
+    if (callback) {
+      this.socket.off(event, callback);
+    } else {
+      this.socket.off(event);
+    }
+  }
+
+  // Emit event
+  public emit(event: string, data: any): void {
+    if (!this.socket || !this.socket.connected) {
+      console.log('❌ Socket not connected, cannot emit event');
+      return;
+    }
+
+    this.socket.emit(event, data);
+  }
+
+  // Check if connected
+  public isConnected(): boolean {
+    return this.socket?.connected || false;
+  }
+
+  // Get current user ID
+  public getCurrentUserId(): string | null {
+    return this.currentUserId;
+  }
+
+  // Get current order ID
+  public getCurrentOrderId(): string | null {
+    return this.currentOrderId;
+  }
+
+  // Disconnect
+  public disconnect(): void {
+    if (this.socket) {
+      console.log('🔌 Disconnecting WebSocket...');
+      
+      // Leave chat room if in one
+      if (this.currentOrderId) {
+        this.socket.emit('leave_chat', this.currentOrderId);
+      }
+      
+      // Leave user room if connected
+      if (this.currentUserId) {
+        this.socket.emit('leave_user_room', this.currentUserId);
+      }
+      
+      this.socket.disconnect();
+      this.socket = null;
+      this.currentUserId = null;
+      this.currentOrderId = null;
+      this.isConnecting = false;
+      this.reconnectAttempts = 0;
+    }
+  }
+
+  // Clear user data (for logout)
+  public async clearUserData(): Promise<void> {
+    this.disconnect();
+    this.currentUserId = null;
+    this.currentOrderId = null;
+  }
+}
+
+// Export singleton instance
+export const webSocketService = WebSocketService.getInstance();
+export default webSocketService; 

@@ -1,16 +1,93 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated } from 'react-native';
-import { getUserData } from '../../services/api';
+import { getUserData, getServices } from '../../services/api';
 
 export default function ServiceDetailsScreen() {
   const router = useRouter();
   const { id, name, image, description } = useLocalSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [serviceFeatures, setServiceFeatures] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Load service features from API
+  useEffect(() => {
+    const loadServiceFeatures = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getServices();
+        if (response.success && response.data) {
+          // Find the service by name or id
+          const service = response.data.find((s: any) => 
+            s._id === id || s.title === name || s.serviceType === name
+          );
+          
+          if (service && service.features && Array.isArray(service.features)) {
+            setServiceFeatures(service.features);
+            console.log('✅ Service features loaded:', service.features);
+          } else {
+            // Fallback to hardcoded features if not found in API
+            const featuresData: Record<string, string[]> = {
+              'تنسيق الحدائق': [
+                'تصميم الحديقة.',
+                'اختيار النباتات المناسبة.',
+                'تركيب أنظمة الري.',
+                'تنسيق المساحات الخضراء.'
+              ],
+              'زراعة الأشجار': [
+                'اختيار أفضل أنواع الأشجار.',
+                'زراعة الأشجار بطريقة احترافية.',
+                'توفير الرعاية اللازمة.',
+                'ضمان نجاح الزراعة.'
+              ],
+              'زراعة ثيل': [
+                'تجهيز الأرض.',
+                'زراعة الثيل الطبيعي أو الصناعي.',
+                'ضمان جودة العشب.',
+                'خدمات صيانة دورية.'
+              ]
+            };
+            const fallbackFeatures = featuresData[name as string] || [];
+            setServiceFeatures(fallbackFeatures);
+            console.log('⚠️ Using fallback features:', fallbackFeatures);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading service features:', error);
+        // Use fallback features on error
+        const featuresData: Record<string, string[]> = {
+          'تنسيق الحدائق': [
+            'تصميم الحديقة.',
+            'اختيار النباتات المناسبة.',
+            'تركيب أنظمة الري.',
+            'تنسيق المساحات الخضراء.'
+          ],
+          'زراعة الأشجار': [
+            'اختيار أفضل أنواع الأشجار.',
+            'زراعة الأشجار بطريقة احترافية.',
+            'توفير الرعاية اللازمة.',
+            'ضمان نجاح الزراعة.'
+          ],
+          'زراعة ثيل': [
+            'تجهيز الأرض.',
+            'زراعة الثيل الطبيعي أو الصناعي.',
+            'ضمان جودة العشب.',
+            'خدمات صيانة دورية.'
+          ]
+        };
+        const fallbackFeatures = featuresData[name as string] || [];
+        setServiceFeatures(fallbackFeatures);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadServiceFeatures();
+  }, [id, name]);
 
   // Check authentication status and reset image state
   useFocusEffect(
@@ -31,29 +108,6 @@ export default function ServiceDetailsScreen() {
       checkAuthStatus();
     }, [id, image]) // Add dependencies to re-run when id or image changes
   );
-
-  // Example features for each service
-  const featuresData: Record<string, string[]> = {
-    'تنسيق الحدائق': [
-      'تصميم الحديقة.',
-      'اختيار النباتات المناسبة.',
-      'تركيب أنظمة الري.',
-      'تنسيق المساحات الخضراء.'
-    ],
-    'زراعة الأشجار': [
-      'اختيار أفضل أنواع الأشجار.',
-      'زراعة الأشجار بطريقة احترافية.',
-      'توفير الرعاية اللازمة.',
-      'ضمان نجاح الزراعة.'
-    ],
-    'زراعة ثيل': [
-      'تجهيز الأرض.',
-      'زراعة الثيل الطبيعي أو الصناعي.',
-      'ضمان جودة العشب.',
-      'خدمات صيانة دورية.'
-    ]
-  };
-  const features = featuresData[name as string] || [];
 
   return (
     <View style={styles.container}>
@@ -120,12 +174,18 @@ export default function ServiceDetailsScreen() {
           <Text style={styles.sectionTitle}>وصف الخدمة</Text>
           <Text style={styles.descriptionLarge}>{description}</Text>
           <Text style={styles.sectionTitle}>ما تشمله الخدمة</Text>
-          {features.map((feature, idx) => (
-            <View key={idx} style={styles.featureRow}>
-              <FontAwesome5 name="circle" size={10} color="#4CAF50" style={{ marginLeft: 6 }} solid />
-              <Text style={styles.featureText}>{feature}</Text>
+          {isLoading ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: '#666', fontSize: 14 }}>جاري تحميل المميزات...</Text>
             </View>
-          ))}
+          ) : (
+            serviceFeatures.map((feature: string, idx: number) => (
+              <View key={idx} style={styles.featureRow}>
+                <FontAwesome5 name="circle" size={10} color="#4CAF50" style={{ marginLeft: 6 }} solid />
+                <Text style={styles.featureText}>{feature}</Text>
+              </View>
+            ))
+          )}
         </View>
         <TouchableOpacity style={styles.gradientButtonWrapper} onPress={() => {
           if (!isLoggedIn) {

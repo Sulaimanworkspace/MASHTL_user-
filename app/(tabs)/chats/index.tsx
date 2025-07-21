@@ -4,6 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, RefreshControl, Animated } from 'react-native';
 import { getUserData, getUserServiceOrders, getUnreadMessageCount } from '../../services/api';
+import webSocketService from '../../services/websocket';
 
 interface ChatOrder {
   _id: string;
@@ -91,17 +92,35 @@ const ChatInboxScreen: React.FC = () => {
     }, [])
   );
 
-  // Listen for order completion events
+  // Initialize WebSocket and listen for events
   useEffect(() => {
-    const socket = require('socket.io-client')('http://172.20.10.12:9090');
-    
-    socket.on('order_completed', (data: { orderId: string }) => {
-      console.log('📱 User received order_completed event:', data.orderId);
-      setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
-    });
+    const initializeWebSocket = async () => {
+      try {
+        await webSocketService.initialize();
+        
+        // Listen for order completion events
+        webSocketService.on('order_completed', (data: { orderId: string }) => {
+          console.log('📱 User received order_completed event:', data.orderId);
+          setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
+        });
+
+        // Listen for new messages to update chat list
+        webSocketService.on('new_message', (message: any) => {
+          console.log('📱 User received new_message event in chat list:', message);
+          // Refresh chat orders to show updated last message
+          fetchChatOrders();
+        });
+      } catch (error) {
+        console.error('❌ Error initializing WebSocket:', error);
+      }
+    };
+
+    initializeWebSocket();
 
     return () => {
-      socket.disconnect();
+      // Clean up event listeners
+      webSocketService.off('order_completed');
+      webSocketService.off('new_message');
     };
   }, []);
 

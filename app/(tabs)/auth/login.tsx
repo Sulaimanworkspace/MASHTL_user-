@@ -3,6 +3,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { login, sendOTP, verifyOTP, storeUserData } from '../../services/api';
+import webSocketService from '../../services/websocket';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -135,6 +136,8 @@ export default function LoginScreen() {
       const loginResult = await login(fullPhone, password);
       if (loginResult.success && loginResult.user) {
         await storeUserData(loginResult.user);
+        // Initialize WebSocket for the new user
+        await webSocketService.initialize(loginResult.user._id);
       }
       
       // Success - navigate to home
