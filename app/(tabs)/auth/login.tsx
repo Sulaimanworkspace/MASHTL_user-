@@ -1,9 +1,12 @@
 import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useRef, useCallback } from 'react';
-import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal } from 'react-native';
+import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { login, sendOTP, verifyOTP, storeUserData } from '../../services/api';
 import webSocketService from '../../services/websocket';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getPushToken } from '../../utils/pushToken';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -18,6 +21,11 @@ export default function LoginScreen() {
   
   // Refs for OTP inputs
   const otpRefs = useRef<(TextInput | null)[]>([]);
+
+  const [pushToken, setPushToken] = useState<string | null>(null);
+  const [notifStatus, setNotifStatus] = useState<string>('unknown');
+  const [showRetry, setShowRetry] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
 
   // Clear form data when screen is focused for security
   useFocusEffect(
@@ -90,7 +98,12 @@ export default function LoginScreen() {
       await login(fullPhone, password);
       
       // Then send OTP for login
-      await sendOTP(fullPhone, 'login');
+      const otpResult = await sendOTP(fullPhone, 'login');
+      
+      // Store session ID for OTP verification
+      if (otpResult.sessionId) {
+        setSessionId(otpResult.sessionId);
+      }
       
       // Show OTP modal
       setShowOTPModal(true);
@@ -120,31 +133,136 @@ export default function LoginScreen() {
     }
   };
 
+  async function forceRegisterPushToken() {
+          console.log('🔔 forceRegisterPushToken: Starting push token registration...');
+      // debugLogger.log('Starting push token registration...', 'info');
+      try {
+        console.log('🔔 forceRegisterPushToken: Checking existing permissions...');
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        console.log('🔔 forceRegisterPushToken: Existing status:', existingStatus);
+        // debugLogger.log(`Permission status: ${existingStatus}`, 'info');
+      
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        console.log('🔔 forceRegisterPushToken: Requesting permissions...');
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+        console.log('🔔 forceRegisterPushToken: New permission status:', status);
+      }
+      
+      setNotifStatus(finalStatus);
+      if (finalStatus !== 'granted') {
+        console.log('❌ forceRegisterPushToken: Permission denied');
+        Alert.alert('تنبيه', 'يجب تفعيل الإشعارات من الإعدادات لتلقي التنبيهات.', [
+          { text: 'حاول مرة أخرى', onPress: forceRegisterPushToken },
+          { text: 'إغلاق', style: 'cancel' }
+        ]);
+        setShowRetry(true);
+        setPushToken(null);
+        return null;
+      }
+      
+              console.log('🔔 forceRegisterPushToken: Getting push token...');
+        // debugLogger.log('Getting push token...', 'info');
+        const token = await getPushToken();
+        console.log('🔔 forceRegisterPushToken: Generated token:', token);
+        // debugLogger.log(`Token generated: ${token ? 'YES' : 'NO'}`, token ? 'success' : 'error');
+      
+      setPushToken(token);
+      setShowRetry(false);
+      console.log('✅ forceRegisterPushToken: Successfully generated push token');
+      return token;
+    } catch (e) {
+      console.log('❌ forceRegisterPushToken: Error occurred:', e);
+      setShowRetry(true);
+      setPushToken(null);
+      setNotifStatus('error');
+      return null;
+    }
+  }
+
   const handleVerifyOTP = async () => {
+    console.log('🔔 handleVerifyOTP: Starting OTP verification...');
     const otpCode = otp.join('');
     if (otpCode.length !== 6) {
+      console.log('❌ handleVerifyOTP: Invalid OTP length:', otpCode.length);
       setErrors({ otp: 'يرجى إدخال رمز التحقق كاملاً' });
       return;
     }
 
+    console.log('🔔 handleVerifyOTP: OTP code:', otpCode);
     setOtpLoading(true);
     try {
       const fullPhone = `+966${phone}`;
-      await verifyOTP(fullPhone, otpCode);
+      console.log('🔔 handleVerifyOTP: Verifying OTP for phone:', fullPhone);
+      await verifyOTP(fullPhone, otpCode, sessionId, 'login');
+      console.log('✅ handleVerifyOTP: OTP verified successfully');
       
       // Get user data after successful login verification
+      console.log('🔔 handleVerifyOTP: Attempting login...');
       const loginResult = await login(fullPhone, password);
+      console.log('🔔 handleVerifyOTP: Login result:', loginResult);
+      
       if (loginResult.success && loginResult.user) {
+        console.log('✅ handleVerifyOTP: Login successful, storing user data...');
         await storeUserData(loginResult.user);
+        
+        // Register push token after login
+        console.log('🔔 handleVerifyOTP: Starting push token registration...');
+        const expoPushToken = await forceRegisterPushToken();
+        
+        if (!expoPushToken) {
+          console.log('⚠️ handleVerifyOTP: Push token not generated. User will not receive push notifications.');
+          // Optionally show a non-blocking warning to the user here
+        } else {
+          // Send push token to backend
+          console.log('🔔 handleVerifyOTP: Sending push token to backend after login:', expoPushToken);
+          // debugLogger.log('Sending push token to backend...', 'info');
+          try {
+            // debugLogger.log(`Using token: ${loginResult.user.token ? 'YES' : 'NO'}`, 'info');
+            // debugLogger.log(`Target URL: http://172.20.10.12:9090/api/auth/push-token`, 'info');
+            
+            const response = await fetch('http://172.20.10.12:9090/api/auth/push-token', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${loginResult.user.token}`
+              },
+              body: JSON.stringify({ pushToken: expoPushToken })
+            });
+            
+            // debugLogger.log(`Response status: ${response.status}`, 'info');
+            
+            if (response.ok) {
+              const responseData = await response.json();
+              console.log('✅ handleVerifyOTP: Push token sent to backend successfully after login');
+              // debugLogger.log('Push token sent to backend successfully!', 'success');
+              // debugLogger.log(`Response: ${JSON.stringify(responseData)}`, 'info');
+            } else {
+              const errorData = await response.text();
+              console.log('❌ handleVerifyOTP: Failed to send push token to backend after login:', response.status);
+              // debugLogger.log(`Failed to send push token: ${response.status}`, 'error');
+              // debugLogger.log(`Error response: ${errorData}`, 'error');
+            }
+          } catch (error: any) {
+            console.log('❌ handleVerifyOTP: Error sending push token to backend after login:', error);
+            // debugLogger.log(`Error: ${error.message || 'Unknown error'}`, 'error');
+            // debugLogger.log(`Error type: ${error.name}`, 'error');
+          }
+        }
+        
         // Initialize WebSocket for the new user
+        console.log('🔔 handleVerifyOTP: Initializing WebSocket...');
         await webSocketService.initialize(loginResult.user._id);
       }
       
       // Success - navigate to home
+      console.log('✅ handleVerifyOTP: Login process completed, navigating to home...');
       setShowOTPModal(false);
       router.replace('/(tabs)/Home');
       
     } catch (error: any) {
+      console.log('❌ handleVerifyOTP: Error during OTP verification:', error);
       setErrors({ otp: error.response?.data?.message || 'رمز التحقق غير صحيح' });
     } finally {
       setOtpLoading(false);
@@ -219,6 +337,10 @@ export default function LoginScreen() {
           <TouchableOpacity style={[styles.button, styles.signupButton]} onPress={() => router.push('/(tabs)/Home')}>
             <Text style={styles.buttonText}>متابعة من دون تسجيل الدخول</Text>
           </TouchableOpacity>
+                  {/*Disabled Log view*/}
+          {/*<TouchableOpacity style={[styles.button, { backgroundColor: '#FF9800', marginTop: 8 }]} onPress={() => router.push('/debug-logger')}>*/}
+          {/*  <Text style={styles.buttonText}>View Debug Logs</Text>*/}
+          {/*</TouchableOpacity>*/}
         </View>
 
         {/* OTP Modal */}

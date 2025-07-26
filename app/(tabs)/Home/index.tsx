@@ -20,6 +20,7 @@ import * as Notifications from 'expo-notifications';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 import LocationPickerModal from '../../components/LocationPickerModal';
+import { getPushToken } from '../../utils/pushToken';
 
 const { width, height } = Dimensions.get('window');
 
@@ -131,11 +132,11 @@ const User4: React.FC = () => {
           requestNotificationPermission().then(async (granted) => {
             if (granted) {
               await notificationService.initialize();
-            }
-          });
         }
       });
-      
+        }
+      });
+
       // Initialize WebSocket connection
       const initializeWebSocket = async () => {
         try {
@@ -389,6 +390,91 @@ const User4: React.FC = () => {
     console.log('📍 Location saved and updated:', locationText);
   };
 
+  // Register push token for existing users
+  // const registerPushToken = async () => {
+  //   try {
+  //     console.log('🔔 registerPushToken: Starting push token registration...');
+  //     // debugLogger.log('Starting push token registration...', 'info');
+      
+  //     // Check permissions
+  //     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  //     console.log('🔔 registerPushToken: Existing status:', existingStatus);
+  //     // debugLogger.log(`Permission status: ${existingStatus}`, 'info');
+      
+  //     let finalStatus = existingStatus;
+  //     if (existingStatus !== 'granted') {
+  //       console.log('🔔 registerPushToken: Requesting permission...');
+  //       const { status } = await Notifications.requestPermissionsAsync();
+  //       finalStatus = status;
+  //       console.log('🔔 registerPushToken: Permission result:', finalStatus);
+  //       // debugLogger.log(`Permission result: ${finalStatus}`, 'info');
+  //     }
+      
+  //     if (finalStatus !== 'granted') {
+  //       console.log('❌ registerPushToken: Permission not granted');
+  //       // debugLogger.log('Permission not granted', 'error');
+  //       return null;
+  //     }
+      
+  //     // Get push token
+  //     console.log('🔔 registerPushToken: Getting push token...');
+  //     // debugLogger.log('Getting push token...', 'info');
+  //     const token = await getPushToken();
+  //     console.log('🔔 registerPushToken: Generated token:', token);
+  //     // debugLogger.log(`Token generated: ${token ? 'YES' : 'NO'}`, token ? 'success' : 'error');
+      
+  //     if (!token) {
+  //       console.log('❌ registerPushToken: No token generated');
+  //       // debugLogger.log('No token generated', 'error');
+  //       return null;
+  //     }
+      
+  //     // Send to backend
+  //     console.log('🔔 registerPushToken: Sending push token to backend...');
+  //     // debugLogger.log('Sending push token to backend...', 'info');
+      
+  //     const userData = await getUserData();
+  //     if (!userData || !userData.token) {
+  //       console.log('❌ registerPushToken: No user data or token found');
+  //       // debugLogger.log('No user data or token found', 'error');
+  //       return null;
+  //     }
+      
+  //     // debugLogger.log(`Using token: ${userData.token ? 'YES' : 'NO'}`, 'info');
+  //     // debugLogger.log(`Target URL: http://172.20.10.12:9090/api/auth/push-token`, 'info');
+      
+  //     const response = await fetch('http://172.20.10.12:9090/api/auth/push-token', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': `Bearer ${userData.token}`
+  //       },
+  //       body: JSON.stringify({ pushToken: token })
+  //     });
+      
+  //     // debugLogger.log(`Response status: ${response.status}`, 'info');
+      
+  //     if (response.ok) {
+  //       const responseData = await response.json();
+  //       console.log('✅ registerPushToken: Push token sent to backend successfully');
+  //       // debugLogger.log('Push token sent to backend successfully!', 'success');
+  //       // debugLogger.log(`Response: ${JSON.stringify(responseData)}`, 'info');
+  //       return token;
+  //     } else {
+  //       const errorData = await response.text();
+  //       console.log('❌ registerPushToken: Failed to send push token to backend:', response.status);
+  //       // debugLogger.log(`Failed to send push token: ${response.status}`, 'error');
+  //       // debugLogger.log(`Error response: ${errorData}`, 'error');
+  //       return null;
+  //     }
+  //   } catch (error: any) {
+  //     console.log('❌ registerPushToken: Error:', error);
+  //     // debugLogger.log(`Error: ${error.message || 'Unknown error'}`, 'error');
+  //     // debugLogger.log(`Error type: ${error.name}`, 'error');
+  //     return null;
+  //   }
+  // };
+
   // Manual permission request for testing
   const requestNotificationPermission = async (): Promise<boolean> => {
     console.log('🔔 Manually requesting notification permission...');
@@ -396,6 +482,15 @@ const User4: React.FC = () => {
     if (success) {
       console.log('✅ Permission granted!');
       alert('Notification permission granted!');
+      
+      // Also register push token
+      console.log('🔔 Registering push token after permission granted...');
+      // const token = await registerPushToken();
+      // if (token) {
+      //   alert('Push token registered successfully!');
+      // } else {
+      //   alert('Failed to register push token');
+      // }
     } else {
       console.log('❌ Permission denied!');
       alert('Notification permission denied!');
@@ -480,6 +575,13 @@ const User4: React.FC = () => {
                 </View>
               )}
             </TouchableOpacity>
+            
+            {/* <TouchableOpacity 
+              style={[styles.notificationButton, { marginLeft: 10, backgroundColor: '#4CAF50' }]}
+              onPress={registerPushToken}
+            >
+              <Text style={{ color: 'white', fontSize: 12 }}>📱</Text>
+            </TouchableOpacity> */}
         </View>
       </View>
 

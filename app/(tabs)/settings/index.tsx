@@ -14,6 +14,7 @@ import {
 import { getUserData, clearUserData } from '../../services/api';
 import webSocketService from '../../services/websocket';
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -97,6 +98,25 @@ const User19: React.FC = () => {
 
   const handleLogout = async () => {
     try {
+      // Remove push token from backend
+      try {
+        const userData = await AsyncStorage.getItem('user_data');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.token) {
+            await fetch('http://172.20.10.12:9090/api/auth/push-token/remove', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user.token}`
+              }
+            });
+            console.log('✅ Push token removed on logout');
+          }
+        }
+      } catch (err) {
+        console.log('⚠️ Could not remove push token on logout:', err);
+      }
       // Clear WebSocket connection first
       await webSocketService.clearUserData();
       await clearUserData();

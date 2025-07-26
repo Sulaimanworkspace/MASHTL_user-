@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -42,12 +43,20 @@ class NotificationService {
       if (Device.isDevice) {
         try {
           const token = await Notifications.getExpoPushTokenAsync({
-            projectId: undefined, // Use default project ID for development
+            projectId: '298f9159-3f1c-4cdb-97a8-8fc32fe63138', // Your actual EAS project ID
           });
           this.expoPushToken = token.data;
           console.log('Expo push token:', this.expoPushToken);
-        } catch (error) {
-          console.log('Could not get Expo push token (this is normal in development):', error);
+          
+          // Send token to backend for push notifications
+          this.sendTokenToBackend(this.expoPushToken);
+        } catch (error: any) {
+          console.error('❌ Could not get Expo push token:', error);
+          console.log('🔍 Error details:', {
+            message: error?.message,
+            code: error?.code,
+            stack: error?.stack
+          });
           // Continue without push token for development
         }
       } else {
@@ -65,6 +74,16 @@ class NotificationService {
         });
       }
 
+      // Set up notification listeners for when app is closed/background
+      Notifications.addNotificationReceivedListener((notification) => {
+        console.log('📱 Notification received (app in background):', notification);
+      });
+
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log('📱 Notification tapped (app was closed):', response);
+        // Handle notification tap - could navigate to specific screen
+      });
+
       return true;
     } catch (error) {
       console.error('Error initializing notifications:', error);
@@ -75,6 +94,34 @@ class NotificationService {
   // Get the push token
   getPushToken(): string | null {
     return this.expoPushToken;
+  }
+
+  // Send token to backend
+  private async sendTokenToBackend(token: string) {
+    try {
+      // Get user data from AsyncStorage
+      const userData = await AsyncStorage.getItem('user_data');
+      if (!userData) return;
+
+      const user = JSON.parse(userData);
+      if (!user.token) return;
+
+      // Send token to backend using fetch
+      const response = await fetch('http://172.20.10.12:9090/api/auth/push-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify({ pushToken: token })
+      });
+      
+      if (response.ok) {
+        console.log('✅ Push token saved to backend');
+      }
+    } catch (error) {
+      console.log('⚠️ Could not save push token to backend:', error);
+    }
   }
 
   // Send local notification
@@ -158,4 +205,7 @@ export const notificationService = new NotificationService();
 // Helper function to send notification from WebSocket
 export const sendNotificationFromWebSocket = (notification: NotificationData) => {
   notificationService.sendLocalNotification(notification);
-}; 
+};
+
+// Default export for the service
+export default notificationService; 

@@ -16,12 +16,14 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة"
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة",
+        "UIBackgroundModes": ["remote-notification"],
+        "NSUserNotificationUsageDescription": "نحتاج إذن الإشعارات لإرسال تحديثات حالة الطلبات"
       },
       "config": {
         "googleMapsApiKey": "AIzaSyDemoKeyForDevelopment123456789"
       },
-      "bundleIdentifier": "com.anonymous.mashtl"
+      "bundleIdentifier": "com.mashtl.mobile"
     },
     "android": {
       "icon": "./assets/images/icon.jpg",
@@ -32,13 +34,16 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
       ],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDemoKeyForDevelopment123456789"
         }
-      }
+      },
+      "package": "com.mashtl.mobile"
     },
     "web": {
       "bundler": "metro",
@@ -62,9 +67,11 @@
       "tsconfigPaths": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "298f9159-3f1c-4cdb-97a8-8fc32fe63138"
       }
-    }
+    },
+    "owner": "streetcatdev"
   }
 }

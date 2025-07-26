@@ -1,8 +1,10 @@
 import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal } from 'react-native';
+import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { registerUser, sendOTP, verifyOTP, storeUserData, checkPhoneExists } from '../../services/api';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -19,6 +21,10 @@ export default function SignupScreen() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [phoneValidating, setPhoneValidating] = useState(false);
   const [phoneValid, setPhoneValid] = useState(false);
+  const [pushToken, setPushToken] = useState<string | null>(null);
+  const [notifStatus, setNotifStatus] = useState<string>('unknown');
+  const [showRetry, setShowRetry] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
   
   // Refs for OTP inputs
   const otpRefs = useRef<(TextInput | null)[]>([]);
@@ -40,6 +46,10 @@ export default function SignupScreen() {
       setOtpLoading(false);
       setPhoneValidating(false);
       setPhoneValid(false);
+      setPushToken(null);
+      setNotifStatus('unknown');
+      setShowRetry(false);
+      setSessionId('');
       // Clear any pending validation
       if (phoneValidationTimeout.current) {
         clearTimeout(phoneValidationTimeout.current);
@@ -195,24 +205,53 @@ export default function SignupScreen() {
     setOtpLoading(true);
     try {
       const fullPhone = `+966${phone}`;
-      await verifyOTP(fullPhone, otpCode);
-      
+      await verifyOTP(fullPhone, otpCode, sessionId, 'signup');
       // Register user after OTP verification
       const result = await registerUser({
         name,
         phone: fullPhone,
-        password
+        password,
+        sessionId
       });
-      
       // Store user data
       if (result.success && result.data) {
         await storeUserData(result.data);
+        // Register push token after signup (same as login)
+        const expoPushToken = await forceRegisterPushToken();
+        if (!expoPushToken) {
+          console.log('⚠️ Push token not generated. User will not receive push notifications.');
+          // Don't block signup for notification issues
+        }
+        // Send push token to backend in background (non-blocking)
+        if (expoPushToken) {
+          const userData = await AsyncStorage.getItem('user_data');
+          if (userData) {
+            const user = JSON.parse(userData);
+            if (user.token) {
+              // Send push token in background without blocking
+              fetch('http://172.20.10.12:9090/api/auth/push-token', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${user.token}`
+                },
+                body: JSON.stringify({ pushToken: expoPushToken })
+              }).then(response => {
+                if (response.ok) {
+                  console.log('✅ Push token sent to backend successfully after signup');
+                } else {
+                  console.log('❌ Failed to send push token to backend after signup:', response.status);
+                }
+              }).catch(fetchErr => {
+                console.log('⚠️ Push token fetch to backend failed:', fetchErr);
+              });
+            }
+          }
+        }
       }
-      
       // Success - navigate to home
       setShowOTPModal(false);
       router.replace('/(tabs)/Home');
-      
     } catch (error: any) {
       setErrors({ otp: error.response?.data?.message || 'رمز التحقق غير صحيح' });
     } finally {
@@ -239,6 +278,11 @@ export default function SignupScreen() {
       const otpResult = await sendOTP(fullPhone, 'signup');
       console.log('OTP sent successfully:', otpResult);
       
+      // Store session ID for OTP verification
+      if (otpResult.sessionId) {
+        setSessionId(otpResult.sessionId);
+      }
+      
       // Clear previous OTP and show modal
       setOtp(['', '', '', '', '', '']);
       setErrors(prev => ({ ...prev, otp: '' })); // Clear OTP errors
@@ -252,6 +296,39 @@ export default function SignupScreen() {
       setLoading(false);
     }
   };
+    // Force Enable notification permission
+  async function forceRegisterPushToken() {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      setNotifStatus(finalStatus);
+      if (finalStatus !== 'granted') {
+        Alert.alert('تنبيه', 'يجب تفعيل الإشعارات من الإعدادات لتلقي التنبيهات.', [
+          { text: 'حاول مرة أخرى', onPress: forceRegisterPushToken },
+          { text: 'إغلاق', style: 'cancel' }
+        ]);
+        setShowRetry(true);
+        setPushToken(null);
+        return null;
+      }
+      const tokenResult = await Notifications.getExpoPushTokenAsync();
+      const token = tokenResult.data;
+      setPushToken(token);
+      setShowRetry(false);
+      console.log('Expo push token:', token);
+      return token;
+    } catch (e) {
+      setShowRetry(true);
+      setPushToken(null);
+      setNotifStatus('error');
+      console.log('Error getting push token:', e);
+      return null;
+    }
+  }
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

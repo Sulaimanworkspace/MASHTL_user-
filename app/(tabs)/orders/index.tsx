@@ -86,13 +86,18 @@ const User17: React.FC = () => {
     socket.on('order_status_update', (data: any) => {
       console.log('📱 Order status update received:', data);
       // Refresh orders to show updated status
-      fetchOrders();
     });
 
     socket.on('order_completed', (data: { orderId: string }) => {
       console.log('📱 Order completed event received:', data.orderId);
       // Refresh orders to show updated status
       fetchOrders();
+    });
+
+    // Listen for order_cancelled event
+    socket.on('order_cancelled', (data: { orderId: string }) => {
+      console.log('📱 Order cancelled event received:', data.orderId);
+      setOrders(prev => prev.filter(order => order._id !== data.orderId));
     });
 
     return () => {
@@ -111,68 +116,68 @@ const User17: React.FC = () => {
 
 
 
-  // Fetch services data
-  const fetchServices = async () => {
-    try {
-      const response = await getServices();
-      if (response.success) {
-        // Add the hardcoded المشاريع service to the dynamic services
-        const projectsService: ServiceData = {
-          _id: 'projects-hardcoded',
-          title: 'المشاريع',
-          description: 'تنفيذ المشاريع الزراعية الكبيرة والصغيرة مع فريق متخصص. نقدم حلول متكاملة للمشاريع الزراعية مع ضمان الجودة والالتزام بالمواعيد.',
-          image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true',
-          serviceType: 'المشاريع',
-          features: ['تخطيط المشروع.', 'تنفيذ بفريق متخصص.', 'ضمان الجودة.', 'التزام بالمواعيد.'],
-          rating: 4.2,
-          isActive: true,
-          order: 4
-        };
+  // // // Fetch services data
+  // // const fetchServices = async () => {
+  // //   try {
+  // //     const response = await getServices();
+  // //     if (response.success) {
+  // //       // Add the hardcoded المشاريع service to the dynamic services
+  //       const projectsService: ServiceData = {
+  //         _id: 'projects-hardcoded',
+  //         title: 'المشاريع',
+  //         description: 'تنفيذ المشاريع الزراعية الكبيرة والصغيرة مع فريق متخصص. نقدم حلول متكاملة للمشاريع الزراعية مع ضمان الجودة والالتزام بالمواعيد.',
+  //         image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/b0048f76b43fdada220b661863a0798441bf574e?placeholderIfAbsent=true',
+  //         serviceType: 'المشاريع',
+  //         features: ['تخطيط المشروع.', 'تنفيذ بفريق متخصص.', 'ضمان الجودة.', 'التزام بالمواعيد.'],
+  //         rating: 4.2,
+  //         isActive: true,
+  //         order: 4
+  //       };
         
-        // Combine dynamic services with hardcoded المشاريع
-        const allServices = [...response.data, projectsService];
-        setServices(allServices);
-      }
-    } catch (error) {
-      console.error('Error loading services:', error);
-      // Fallback services if API fails
-      setServices([
-        {
-          _id: 'fallback-1',
-          title: 'تنسيق الحدائق',
-          description: 'خدمة تنسيق الحدائق المنزلية والشركات بأحدث التصاميم والأساليب الحديثة. نقوم بتصميم وتنفيذ جميع أنواع الحدائق مع ضمان جودة العمل والمواد المستخدمة.',
-          image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/9db5513cffa0f952bf72289940508e6bb2f43e86?placeholderIfAbsent=true',
-          serviceType: 'تنسيق الحدائق',
-          features: ['تصميم الحديقة.', 'اختيار النباتات المناسبة.', 'تركيب أنظمة الري.', 'تنسيق المساحات الخضراء.'],
-          rating: 4.2,
-          isActive: true,
-          order: 1
-        },
-        {
-          _id: 'fallback-2',
-          title: 'زراعة الأشجار',
-          description: 'خدمة زراعة الأشجار بأنواعها المختلفة مع توفير الرعاية اللازمة. نقوم باختيار أفضل أنواع الأشجار المناسبة للمناخ والتربة مع ضمان نجاح الزراعة.',
-          image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/4f68288a8dfbd3be84b86a86f69f10b478b30bb2?placeholderIfAbsent=true',
-          serviceType: 'زراعة الأشجار',
-          features: ['اختيار أفضل أنواع الأشجار.', 'زراعة الأشجار بطريقة احترافية.', 'توفير الرعاية اللازمة.', 'ضمان نجاح الزراعة.'],
-          rating: 4.2,
-          isActive: true,
-          order: 2
-        },
-        {
-          _id: 'fallback-3',
-          title: 'زراعة ثيل',
-          description: 'خدمة زراعة الثيل الطبيعي والصناعي مع ضمان جودة العشب. نقوم بتجهيز الأرض وزراعة الثيل مع توفير خدمات الصيانة الدورية.',
-          image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/46f551cf45a05c4bbd3169c8c33a7c6b72ea9cb1?placeholderIfAbsent=true',
-          serviceType: 'زراعة ثيل',
-          features: ['تجهيز الأرض.', 'زراعة الثيل الطبيعي أو الصناعي.', 'ضمان جودة العشب.', 'خدمات صيانة دورية.'],
-          rating: 4.2,
-          isActive: true,
-          order: 3
-        }
-      ]);
-    }
-  };
+    // //     // Combine dynamic services with hardcoded المشاريع
+    //     const allServices = [...response.data, projectsService];
+    //     setServices(allServices);
+    //   }
+    // } catch (error) {
+    //   console.error('Error loading services:', error);
+    //   // Fallback services if API fails
+    //   // setServices([
+    //     {
+    //       _id: 'fallback-1',
+    //       title: 'تنسيق الحدائق',
+    //       description: 'خدمة تنسيق الحدائق المنزلية والشركات بأحدث التصاميم والأساليب الحديثة. نقوم بتصميم وتنفيذ جميع أنواع الحدائق مع ضمان جودة العمل والمواد المستخدمة.',
+    //       image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/9db5513cffa0f952bf72289940508e6bb2f43e86?placeholderIfAbsent=true',
+    //       serviceType: 'تنسيق الحدائق',
+    //       features: ['تصميم الحديقة.', 'اختيار النباتات المناسبة.', 'تركيب أنظمة الري.', 'تنسيق المساحات الخضراء.'],
+    //       rating: 4.2,
+    //       isActive: true,
+    //       order: 1
+    //     },
+    //     {
+    //       _id: 'fallback-2',
+    //       title: 'زراعة الأشجار',
+    //       description: 'خدمة زراعة الأشجار بأنواعها المختلفة مع توفير الرعاية اللازمة. نقوم باختيار أفضل أنواع الأشجار المناسبة للمناخ والتربة مع ضمان نجاح الزراعة.',
+    //       image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/4f68288a8dfbd3be84b86a86f69f10b478b30bb2?placeholderIfAbsent=true',
+    //       serviceType: 'زراعة الأشجار',
+    //       features: ['اختيار أفضل أنواع الأشجار.', 'زراعة الأشجار بطريقة احترافية.', 'توفير الرعاية اللازمة.', 'ضمان نجاح الزراعة.'],
+    //       rating: 4.2,
+    //       isActive: true,
+    //       order: 2
+    //     },
+    //     {
+    //       _id: 'fallback-3',
+    //       title: 'زراعة ثيل',
+    //       description: 'خدمة زراعة الثيل الطبيعي والصناعي مع ضمان جودة العشب. نقوم بتجهيز الأرض وزراعة الثيل مع توفير خدمات الصيانة الدورية.',
+    //       image: 'https://cdn.builder.io/api/v1/image/assets/367dbe4879424ce6b810fe26f94ba4b7/46f551cf45a05c4bbd3169c8c33a7c6b72ea9cb1?placeholderIfAbsent=true',
+    //       serviceType: 'زراعة ثيل',
+    //       features: ['تجهيز الأرض.', 'زراعة الثيل الطبيعي أو الصناعي.', 'ضمان جودة العشب.', 'خدمات صيانة دورية.'],
+    //       rating: 4.2,
+    //       isActive: true,
+    //       order: 3
+    //     }
+    //   ]);
+    // }
+  // };
 
   // Fetch user orders
   const fetchOrders = async () => {
@@ -385,7 +390,6 @@ const User17: React.FC = () => {
                 <View style={styles.orderMainInfo}>
                   <Text style={styles.serviceTitle}>{getServiceName(order.serviceType)}</Text>
                 </View>
-                
                 <View style={styles.locationRow}>
                   <FontAwesome5 name="map-marker-alt" size={16} color="#666" style={{ marginLeft: 6 }} />
                   <Text style={styles.locationText}>{order.location.address}</Text>
@@ -457,7 +461,14 @@ const User17: React.FC = () => {
               {selectedOrder && (
                 <View style={styles.farmerContactInfo}>
                   <View style={styles.farmerAvatar}>
-                    <FontAwesome5 name="user" size={30} color="#4CAF50" />
+                    {selectedOrder.farmer?.avatar ? (
+                      <Image 
+                        source={{ uri: selectedOrder.farmer.avatar }}
+                        style={{ width: 40, height: 40, borderRadius: 20 }}
+                      />
+                    ) : (
+                      <FontAwesome5 name="user" size={30} color="#4CAF50" />
+                    )}
                   </View>
                   <Text style={styles.farmerContactName}>
                     {selectedOrder.farmer?.name || 'المزارع المسؤول'}
@@ -501,8 +512,7 @@ const User17: React.FC = () => {
                   style={[styles.callButton, !selectedOrder?.farmer?.phone && styles.disabledButton]}
                   onPress={() => {
                     if (selectedOrder?.farmer?.phone) {
-                      const phoneNumber = selectedOrder.farmer.phone.replace(/\s+/g, '');
-                      Linking.openURL(`tel:${phoneNumber}`);
+                      Linking.openURL(`tel:${selectedOrder.farmer.phone}`);
                     } else {
                       Alert.alert('تنبيه', 'رقم الهاتف غير متوفر حالياً');
                     }
@@ -524,6 +534,26 @@ const User17: React.FC = () => {
                   </Text>
                 ) : null}
               </View>
+              {/* Track Order Button - duplicate of order status container */}
+              <TouchableOpacity
+                style={[styles.contactOrderInfo, { marginTop: 12 }]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (selectedOrder) {
+                    setShowContactModal(false);
+                    router.push({
+                      pathname: '/(tabs)/chats/track-order',
+                      params: {
+                        orderId: selectedOrder._id,
+                        farmerName: selectedOrder.farmer?.name,
+                        farmerId: selectedOrder.farmer?._id
+                      }
+                    });
+                  }
+                }}
+              >
+                <Text style={styles.contactOrderStatus}>تتبع الطلب</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

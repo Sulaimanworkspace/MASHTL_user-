@@ -37,9 +37,10 @@ const ChatInboxScreen: React.FC = () => {
       console.log('🔍 Fetching chat orders...');
       const response = await getUserServiceOrders();
       if (response.success) {
-        // Filter orders that have farmers (accepted orders) and are not completed
+        // Only show chats for active orders
+        const activeStatuses = ['accepted', 'in_progress', 'working', 'almost_done', 'finalizing'];
         const ordersWithFarmers = response.data.filter((order: ChatOrder) => 
-          order.farmer && order.status !== 'completed'
+          order.farmer && activeStatuses.includes(order.status)
         );
         console.log('📱 User chat orders data:', ordersWithFarmers.map((o: any) => ({ 
           id: o._id, 
@@ -97,10 +98,22 @@ const ChatInboxScreen: React.FC = () => {
     const initializeWebSocket = async () => {
       try {
         await webSocketService.initialize();
-        
+    
         // Listen for order completion events
         webSocketService.on('order_completed', (data: { orderId: string }) => {
-          console.log('📱 User received order_completed event:', data.orderId);
+      console.log('📱 User received order_completed event:', data.orderId);
+      setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
+    });
+
+        // Listen for order cancelled events
+        webSocketService.on('order_cancelled', (data: { orderId: string }) => {
+          console.log('📱 User received order_cancelled event:', data.orderId);
+          setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
+        });
+
+        // Listen for order rejected events
+        webSocketService.on('order_rejected', (data: { orderId: string }) => {
+          console.log('📱 User received order_rejected event:', data.orderId);
           setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
         });
 
@@ -120,6 +133,8 @@ const ChatInboxScreen: React.FC = () => {
     return () => {
       // Clean up event listeners
       webSocketService.off('order_completed');
+      webSocketService.off('order_cancelled');
+      webSocketService.off('order_rejected');
       webSocketService.off('new_message');
     };
   }, []);
@@ -139,25 +154,29 @@ const ChatInboxScreen: React.FC = () => {
     const imageError = imageErrors[item._id] || false;
 
     return (
-      <TouchableOpacity 
-        style={styles.chatItem} 
-        onPress={() => {
-          if (item.farmer) {
-            router.push({
-              pathname: '/(tabs)/chats/message',
-              params: {
-                orderId: item._id,
-                farmerId: item.farmer._id,
-                farmerName: item.farmer.name,
-                farmerAvatar: item.farmer.avatar
-              }
-            });
-          }
-        }}
-      >
+    <TouchableOpacity 
+      style={styles.chatItem} 
+      onPress={() => {
+        if (item.farmer) {
+          router.push({
+            pathname: '/(tabs)/chats/message',
+            params: {
+              orderId: item._id,
+              farmerId: item.farmer._id,
+              farmerName: item.farmer.name,
+              farmerAvatar: item.farmer.avatar
+            }
+          });
+        }
+      }}
+    >
         <View style={styles.avatarContainer}>
           <Animated.Image 
-            source={require('../../../assets/images/icon.jpg')}
+            source={
+              item.farmer?.avatar 
+                ? { uri: item.farmer.avatar }
+                : require('../../../assets/images/icon.jpg')
+            }
             style={[
               styles.avatar,
               { opacity: fadeAnim }
@@ -182,17 +201,17 @@ const ChatInboxScreen: React.FC = () => {
             </View>
           )}
         </View>
-        <View style={styles.chatInfo}>
-          <View style={styles.chatHeader}>
-            <Text style={styles.name}>{item.farmer?.name || 'مزارع'}</Text>
-            <Text style={styles.time}>{new Date(item.createdAt).toLocaleDateString('en-US')}</Text>
-          </View>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.lastMessage || `خدمة: ${(item as any).title || item.serviceTitle || 'خدمة'}`}
-          </Text>
+      <View style={styles.chatInfo}>
+        <View style={styles.chatHeader}>
+          <Text style={styles.name}>{item.farmer?.name || 'مزارع'}</Text>
+          <Text style={styles.time}>{new Date(item.createdAt).toLocaleDateString('en-US')}</Text>
         </View>
-      </TouchableOpacity>
-    );
+        <Text style={styles.lastMessage} numberOfLines={1}>
+          {item.lastMessage || `خدمة: ${(item as any).title || item.serviceTitle || 'خدمة'}`}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
   };
 
   // Don't render anything if not authenticated (prevents flash)
@@ -243,7 +262,7 @@ const ChatInboxScreen: React.FC = () => {
         ListEmptyComponent={
           <View style={styles.emptyStateContainer}>
             <FontAwesome5 name="comments" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>لا توجد محادثات نشطة</Text>
+            <Text style={styles.emptyText}>لا توجد محادثات </Text>
             <Text style={styles.emptySubtext}>ستظهر المحادثات هنا للطلبات المقبولة والتي لم تكتمل بعد</Text>
           </View>
         }

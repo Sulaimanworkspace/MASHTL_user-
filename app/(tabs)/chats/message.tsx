@@ -2,8 +2,8 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
-import { getChatHistory, sendChatMessage, getUserData } from '../../services/api';
+import { FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, Modal, TouchableWithoutFeedback, Dimensions } from 'react-native';
+import { getChatHistory, sendChatMessage, getUserData, cancelServiceOrder } from '../../services/api';
 import webSocketService from '../../services/websocket';
 
 interface Message {
@@ -44,6 +44,12 @@ const MessageScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showCancelSheet, setShowCancelSheet] = useState(false);
+  const minusButtonRef = useRef<View>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{top: number, left: number}>({top: 0, left: 0});
+  const [showCannotCancelModal, setShowCannotCancelModal] = useState(false);
+  const [orderStatus, setOrderStatus] = useState<string>('accepted');
 
   // Initialize WebSocket connection and load chat history
   useEffect(() => {
@@ -62,6 +68,9 @@ const MessageScreen: React.FC = () => {
           const response = await getChatHistory(orderId);
           if (response.success) {
             setMessages(response.messages);
+            if (response.order && response.order.status) {
+              setOrderStatus(response.order.status);
+            }
           }
         }
 
@@ -95,6 +104,18 @@ const MessageScreen: React.FC = () => {
       // Leave chat room and clean up event listeners
       webSocketService.leaveChat();
       webSocketService.off('new_message');
+    };
+  }, [orderId]);
+
+  // Listen for order status updates
+  useEffect(() => {
+    webSocketService.on('order_status_update', (data: { orderId: string; status: string }) => {
+      if (data.orderId === orderId && data.status) {
+        setOrderStatus(data.status);
+      }
+    });
+    return () => {
+      webSocketService.off('order_status_update');
     };
   }, [orderId]);
 
@@ -148,6 +169,18 @@ const MessageScreen: React.FC = () => {
     }
   };
 
+  const handleCancelOrder = async () => {
+    if (!orderId) return;
+    try {
+      await cancelServiceOrder(orderId);
+      setMessages([]); // Clear chat messages
+      Alert.alert('تم الإلغاء', 'تم إلغاء الطلب بنجاح.');
+      router.push('/(tabs)/chats'); // Navigate back to chats list
+    } catch (error) {
+      Alert.alert('خطأ', 'حدث خطأ أثناء إلغاء الطلب. حاول مرة أخرى.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
@@ -185,7 +218,11 @@ const MessageScreen: React.FC = () => {
               <View style={[styles.messageRow, isMyMessage ? styles.myMessageRow : styles.userMessageRow]}>
                 {!isMyMessage && (
                   <Image 
-                    source={require('../../../assets/images/icon.jpg')}
+                    source={
+                      farmerAvatar 
+                        ? { uri: farmerAvatar }
+                        : require('../../../assets/images/icon.jpg')
+                    }
                     style={styles.avatarSmall} 
                   />
                 )}
@@ -221,7 +258,23 @@ const MessageScreen: React.FC = () => {
             pointerEvents="none"
           />
           <View style={styles.inputWrapper}>
-            <TouchableOpacity style={styles.minusButton}>
+            <TouchableOpacity 
+              style={styles.minusButton} 
+              ref={minusButtonRef}
+              onPress={() => {
+                if (minusButtonRef.current) {
+                  minusButtonRef.current.measure((fx, fy, width, height, px, py) => {
+                    setDropdownPosition({
+                      top: py - 100, // 60px above the icon for spacing
+                      left: px - 20 // adjust for menu width
+                    });
+                    setShowCancelSheet(true);
+                  });
+                } else {
+                  setShowCancelSheet(true);
+                }
+              }}
+            >
               <FontAwesome5 name="minus-circle" size={20} color="#FF0000" />
             </TouchableOpacity>
             <TextInput
@@ -248,6 +301,95 @@ const MessageScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      {/* Dropdown Menu for Cancel */}
+      <Modal
+        visible={showCancelSheet}
+        transparent
+        animationType="none"
+        onRequestClose={() => setShowCancelSheet(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowCancelSheet(false)}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.1)' }}>
+            <TouchableWithoutFeedback>
+              <View style={{
+                position: 'absolute',
+                top: dropdownPosition.top,
+                left: dropdownPosition.left,
+                backgroundColor: '#fff',
+                borderRadius: 12,
+                paddingVertical: 8,
+                paddingHorizontal: 24,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+                elevation: 6,
+                alignItems: 'center',
+                minWidth: 120
+              }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowCancelSheet(false);
+                    if (orderStatus === 'accepted') {
+                      // Navigate to the new cancel order page
+                      router.push({
+                        pathname: '/(tabs)/chats/cancel-order',
+                        params: { orderId }
+                      });
+                    } else {
+                      setShowCannotCancelModal(true);
+                    }
+                  }}
+                  style={{ width: '100%', paddingVertical: 8, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#FF0000', fontSize: 16, fontWeight: 'bold' }}>الغاء الطلب</Text>
+                </TouchableOpacity>
+                {/* Separator */}
+                <View style={{ width: '100%', height: 1, backgroundColor: '#eee', marginVertical: 4 }} />
+                {/* Track Order */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowCancelSheet(false);
+                    router.push({
+                      pathname: '/(tabs)/chats/track-order',
+                      params: { orderId, farmerName, farmerId }
+                    });
+                  }}
+                  style={{ width: '100%', paddingVertical: 8, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#000', fontSize: 16, fontWeight: 'bold' }}>تتبع الطلب</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Cannot Cancel Modal */}
+      <Modal
+        visible={showCannotCancelModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCannotCancelModal(false)}
+      >
+        <View style={styles.notificationModalOverlay}>
+          <View style={styles.notificationModalContainer}>
+            <View style={styles.notificationModalContent}>
+              <View style={{ marginBottom: 16 }}>
+                <FontAwesome5 name="times-circle" size={40} color="#FF3B30" />
+              </View>
+              <Text style={styles.notificationModalTitle}>لا يمكن إلغاء الطلب بعد بدء العمل</Text>
+              <Text style={styles.notificationModalMessage}>لا يمكن إلغاء الطلب بعد أن بدأ المزارع العمل عليه.</Text>
+              <TouchableOpacity
+                style={styles.notificationModalButton}
+                onPress={() => setShowCannotCancelModal(false)}
+              >
+                <Text style={styles.notificationModalButtonText}>حسناً</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -414,6 +556,123 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 8,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 16,
+    color: '#222',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 8,
+  },
+  modalButton: {
+    backgroundColor: '#eee',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    marginHorizontal: 8,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+  },
+  confirmButton: {
+    backgroundColor: '#4CAF50',
+  },
+  cancelButton: {
+    backgroundColor: '#FF0000',
+  },
+  modalButtonText: {
+    color: '#222',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  notificationModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    alignItems: 'center',
+  },
+  notificationModalTitle: {
+    fontSize: 16,
+    color: '#222',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  notificationModalMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  notificationModalButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+  },
+  notificationModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
     textAlign: 'center',
   },
 });
