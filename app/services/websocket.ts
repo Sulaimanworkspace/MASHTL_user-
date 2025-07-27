@@ -73,21 +73,26 @@ class WebSocketService {
 
     try {
       this.socket = io(this.socketUrl, {
-        transports: ['websocket', 'polling'],
-        timeout: 10000,
+      transports: ['websocket', 'polling'],
+      timeout: 10000,
         forceNew: true
-      });
+    });
 
       this.socket.on('connect', () => {
         console.log('✅ WebSocket connected successfully');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         this.currentUserId = userId;
-        
+      
         // Join user room for notifications
         this.socket?.emit('join_user_room', userId);
         console.log(`👤 Joined user room: user_${userId}`);
-      });
+        
+        // Listen for all events to debug
+        this.socket.onAny((eventName: string, ...args: any[]) => {
+          console.log(`🔌 WebSocket event received: ${eventName}`, args);
+        });
+    });
 
       this.socket.on('connect_error', (error: any) => {
         console.error('❌ WebSocket connection error:', error);
@@ -102,18 +107,18 @@ class WebSocketService {
         if (reason === 'io server disconnect') {
           // Server disconnected us, try to reconnect
           this.handleReconnect(userId);
-        }
-      });
+      }
+    });
 
       this.socket.on('error', (error: any) => {
         console.error('❌ WebSocket error:', error);
       });
 
-    } catch (error) {
+  } catch (error) {
       console.error('❌ Error creating WebSocket connection:', error);
       this.isConnecting = false;
       this.handleReconnect(userId);
-    }
+  }
   }
 
   // Handle reconnection
@@ -143,13 +148,14 @@ class WebSocketService {
     if (this.currentOrderId === orderId) {
       console.log('🔌 Already in this chat room');
       return;
-    }
+  }
 
     // Leave previous chat room if any
     if (this.currentOrderId) {
       this.leaveChat();
     }
 
+    console.log(`👥 Attempting to join chat room: chat_${orderId}`);
     this.socket.emit('join_chat', orderId);
     this.currentOrderId = orderId;
     console.log(`👥 Joined chat room: chat_${orderId}`);
@@ -171,7 +177,7 @@ class WebSocketService {
     if (!this.socket) {
       console.log('❌ Socket not available for event listener');
       return;
-    }
+  }
 
     this.socket.on(event, callback);
   }

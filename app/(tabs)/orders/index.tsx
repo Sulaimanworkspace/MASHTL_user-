@@ -86,13 +86,18 @@ const User17: React.FC = () => {
     socket.on('order_status_update', (data: any) => {
       console.log('📱 Order status update received:', data);
       // Refresh orders to show updated status
-      fetchOrders();
     });
 
     socket.on('order_completed', (data: { orderId: string }) => {
       console.log('📱 Order completed event received:', data.orderId);
       // Refresh orders to show updated status
       fetchOrders();
+    });
+
+    // Listen for order_cancelled event
+    socket.on('order_cancelled', (data: { orderId: string }) => {
+      console.log('📱 Order cancelled event received:', data.orderId);
+      setOrders(prev => prev.filter(order => order._id !== data.orderId));
     });
 
     return () => {
@@ -385,7 +390,6 @@ const User17: React.FC = () => {
                 <View style={styles.orderMainInfo}>
                   <Text style={styles.serviceTitle}>{getServiceName(order.serviceType)}</Text>
                 </View>
-                
                 <View style={styles.locationRow}>
                   <FontAwesome5 name="map-marker-alt" size={16} color="#666" style={{ marginLeft: 6 }} />
                   <Text style={styles.locationText}>{order.location.address}</Text>
@@ -501,8 +505,7 @@ const User17: React.FC = () => {
                   style={[styles.callButton, !selectedOrder?.farmer?.phone && styles.disabledButton]}
                   onPress={() => {
                     if (selectedOrder?.farmer?.phone) {
-                      const phoneNumber = selectedOrder.farmer.phone.replace(/\s+/g, '');
-                      Linking.openURL(`tel:${phoneNumber}`);
+                      Linking.openURL(`tel:${selectedOrder.farmer.phone}`);
                     } else {
                       Alert.alert('تنبيه', 'رقم الهاتف غير متوفر حالياً');
                     }
@@ -524,6 +527,26 @@ const User17: React.FC = () => {
                   </Text>
                 ) : null}
               </View>
+              {/* Track Order Button - duplicate of order status container */}
+              <TouchableOpacity
+                style={[styles.contactOrderInfo, { marginTop: 12 }]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (selectedOrder) {
+                    setShowContactModal(false);
+                    router.push({
+                      pathname: '/(tabs)/chats/track-order',
+                      params: {
+                        orderId: selectedOrder._id,
+                        farmerName: selectedOrder.farmer?.name,
+                        farmerId: selectedOrder.farmer?._id
+                      }
+                    });
+                  }
+                }}
+              >
+                <Text style={styles.contactOrderStatus}>تتبع الطلب</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

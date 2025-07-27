@@ -180,10 +180,10 @@ export default function ServiceDetailsScreen() {
             </View>
           ) : (
             serviceFeatures.map((feature: string, idx: number) => (
-              <View key={idx} style={styles.featureRow}>
-                <FontAwesome5 name="circle" size={10} color="#4CAF50" style={{ marginLeft: 6 }} solid />
-                <Text style={styles.featureText}>{feature}</Text>
-              </View>
+            <View key={idx} style={styles.featureRow}>
+              <FontAwesome5 name="circle" size={10} color="#4CAF50" style={{ marginLeft: 6 }} solid />
+              <Text style={styles.featureText}>{feature}</Text>
+            </View>
             ))
           )}
         </View>

@@ -13,6 +13,7 @@ import {
     Animated
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserData, getNotificationCount, getServices } from '../../services/api';
 import webSocketService from '../../services/websocket';
 import { notificationService } from '../../services/notifications';
@@ -131,28 +132,64 @@ const User4: React.FC = () => {
           requestNotificationPermission().then(async (granted) => {
             if (granted) {
               await notificationService.initialize();
-            }
-          });
         }
       });
-      
+        }
+      });
+
       // Initialize WebSocket connection
       const initializeWebSocket = async () => {
         try {
+          console.log('🔌 Initializing WebSocket connection...');
+          
+          // Check user data first
+          const userData = await AsyncStorage.getItem('user_data');
+          console.log('🔌 User data from storage:', userData);
+          if (userData) {
+            const parsed = JSON.parse(userData);
+            console.log('🔌 Parsed user ID:', parsed._id);
+          }
+          
           await webSocketService.initialize();
           
+          // Check connection status
+          console.log('🔌 WebSocket connected:', webSocketService.isConnected());
+          console.log('🔌 Current user ID:', webSocketService.getCurrentUserId());
+          
           // Listen for new notifications
-          webSocketService.on('new_notification', (notification: any) => {
+          webSocketService.on('new_notification', async (notification: any) => {
             console.log('📱 WebSocket notification received:', notification);
+            console.log('📱 Notification title:', notification.title);
+            console.log('📱 Notification message:', notification.message);
             setNotificationCount(prev => prev + 1);
             
             // Send local notification for dropdown
-            notificationService.sendLocalNotification({
-              title: notification.title || 'رسالة جديدة',
-              body: notification.message || 'لديك رسالة جديدة من المزارع',
-              data: notification
-            });
+            try {
+              console.log('📱 Attempting to send local notification...');
+              await notificationService.sendLocalNotification({
+                title: notification.title || 'رسالة جديدة',
+                body: notification.message || 'لديك رسالة جديدة من المزارع',
+                data: notification
+              });
+              console.log('📱 Local notification sent successfully');
+            } catch (error) {
+              console.error('📱 Error sending local notification:', error);
+            }
           });
+          
+          // Listen for connection events
+          webSocketService.on('connect', () => {
+            console.log('🔌 WebSocket connected successfully');
+          });
+          
+          webSocketService.on('disconnect', () => {
+            console.log('🔌 WebSocket disconnected');
+          });
+          
+          webSocketService.on('connect_error', (error: any) => {
+            console.error('🔌 WebSocket connection error:', error);
+          });
+          
         } catch (error) {
           console.error('❌ Error initializing WebSocket:', error);
         }

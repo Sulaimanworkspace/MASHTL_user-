@@ -11,48 +11,50 @@ const POSSIBLE_URLS = [
   'http://192.168.0.100:9090/api',  // Alternative local network IP
 ];
 
-let API_BASE_URL = POSSIBLE_URLS[0]; // Start with Android Emulator
+let API_BASE_URL = POSSIBLE_URLS[0]; // Start with your Mac's IP
 
 // Function to test which URL works
 const testAPIConnection = async () => {
+  console.log('🔍 Testing API connections...');
   for (const url of POSSIBLE_URLS) {
     try {
       console.log(`Testing API URL: ${url}`);
       // Test the root endpoint by removing /api and adding /
       const testUrl = url.replace('/api', '') + '/';
-      const response = await axios.get(testUrl, { timeout: 5000 });
-      console.log(`Found working API URL: ${url}`);
+      const response = await axios.get(testUrl, { timeout: 3000 });
+      console.log(`✅ Found working API URL: ${url}`);
       API_BASE_URL = url;
       return url;
     } catch (error) {
-      console.log(`Failed to connect to: ${url}`);
+      console.log(`❌ Failed to connect to: ${url}`);
     }
   }
-  console.error('No working API URL found. Using default:', POSSIBLE_URLS[0]);
+  console.error('⚠️ No working API URL found. Using default:', POSSIBLE_URLS[0]);
   return POSSIBLE_URLS[0];
 };
 
-// Test connection on app start (only in development)
-if (__DEV__) {
-  testAPIConnection();
-}
+// Test connection on app start (both development and production)
+testAPIConnection();
 
 // Export test function for manual testing
 export const testConnection = async () => {
   try {
-    console.log('Testing API connection...');
+    console.log('🔍 Testing API connection...');
     const result = await testAPIConnection();
-    console.log('Connection test result:', result);
+    console.log('✅ Connection test result:', result);
     return result;
   } catch (error) {
-    console.error('Connection test failed:', error);
+    console.error('❌ Connection test failed:', error);
     return null;
   }
 };
 
 const api = axios.create({
-  get baseURL() { return API_BASE_URL; },
-  timeout: 30000,
+  get baseURL() { 
+    console.log('🌐 Using API URL:', API_BASE_URL);
+    return API_BASE_URL; 
+  },
+  timeout: 10000, // Reduced timeout for faster failure detection
   headers: {
     'Content-Type': 'application/json',
   },
@@ -61,8 +63,10 @@ const api = axios.create({
 // Add request/response interceptors for debugging and authentication
 api.interceptors.request.use(
   async (config) => {
-    console.log('API Request:', config.method?.toUpperCase(), (config.baseURL || '') + (config.url || ''));
-    console.log('Request data:', config.data);
+    console.log('📤 API Request:', config.method?.toUpperCase(), (config.baseURL || '') + (config.url || ''));
+    if (config.data) {
+      console.log('📤 Request data:', config.data);
+    }
     
     // Add authentication token if available
     try {
@@ -71,41 +75,38 @@ api.interceptors.request.use(
         const user = JSON.parse(userData);
         if (user.token) {
           config.headers.Authorization = `Bearer ${user.token}`;
-          console.log('Added auth token to request');
+          console.log('🔑 Added auth token to request');
         } else {
-          console.log('No token found in user data');
+          console.log('⚠️ No token found in user data');
         }
       } else {
-        console.log('No user data found in AsyncStorage');
+        console.log('⚠️ No user data found in AsyncStorage');
       }
     } catch (error) {
-      console.error('Error getting auth token:', error);
+      console.error('❌ Error getting auth token:', error);
     }
     
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
+    console.error('❌ Request error:', error);
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
   (response) => {
-    console.log('API Response:', response.status, response.config.url);
-    console.log('Response data:', response.data);
+    console.log('📥 API Response:', response.status, response.config.url);
+    if (response.data) {
+      console.log('📥 Response data:', response.data);
+    }
     return response;
   },
   (error) => {
-    console.error('API Error:', error.message);
+    console.error('❌ API Error:', error.message);
     if (error.response) {
-      console.error('Error response:', error.response.data);
-      console.error('Error status:', error.response.status);
-    } else if (error.request) {
-      console.error('No response received - Check if server is running on correct port');
-      console.error('Current API URL:', API_BASE_URL);
-      // Convert network error to Arabic message
-      error.message = 'فشل في الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى';
+      console.error('❌ Error status:', error.response.status);
+      console.error('❌ Error data:', error.response.data);
     }
     return Promise.reject(error);
   }
