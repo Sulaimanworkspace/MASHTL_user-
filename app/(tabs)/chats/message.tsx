@@ -8,6 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { getChatHistory, sendChatMessage, getUserData, cancelServiceOrder } from '../../services/api';
 import webSocketService from '../../services/websocket';
+import CustomModal from '../../components/CustomModal';
 import { notificationService } from '../../services/notifications';
 
 interface Message {
@@ -59,6 +60,20 @@ const MessageScreen: React.FC = () => {
   const [pendingPriceProposal, setPendingPriceProposal] = useState<any>(null);
   const [respondedPriceProposals, setRespondedPriceProposals] = useState<{[key: string]: 'accepted' | 'rejected'}>({});
 
+  // Modal states for all alerts
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  // Helper function to show custom modal
+  const showCustomModal = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setShowModal(true);
+  };
+
   // Initialize WebSocket connection and load chat history
   useEffect(() => {
     let isInitialized = false;
@@ -71,7 +86,7 @@ const MessageScreen: React.FC = () => {
         console.log('🔌 Initializing chat for orderId:', orderId);
         const userData = await getUserData();
         if (!userData) {
-          Alert.alert('خطأ', 'يرجى تسجيل الدخول مرة أخرى');
+          showCustomModal('error', 'خطأ', 'يرجى تسجيل الدخول مرة أخرى');
           router.replace('/(tabs)/auth/login');
           return;
         }
@@ -134,7 +149,7 @@ const MessageScreen: React.FC = () => {
         setIsLoading(false);
       } catch (error) {
         console.error('Error initializing chat:', error);
-        Alert.alert('خطأ', 'فشل في تحميل المحادثة');
+        showCustomModal('error', 'خطأ', 'فشل في تحميل المحادثة');
         setIsLoading(false);
         isInitialized = false;
       }
@@ -203,13 +218,13 @@ const MessageScreen: React.FC = () => {
       } else {
         // If failed, remove the temp message
         setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
-        Alert.alert('خطأ', 'فشل في إرسال الرسالة');
+        showCustomModal('error', 'خطأ', 'فشل في إرسال الرسالة');
       }
     } catch (error) {
       console.error('Error sending message:', error);
       // Remove the temp message on error
       setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
-      Alert.alert('خطأ', 'فشل في إرسال الرسالة');
+      showCustomModal('error', 'خطأ', 'فشل في إرسال الرسالة');
     }
   };
 
@@ -219,11 +234,11 @@ const MessageScreen: React.FC = () => {
       await cancelServiceOrder(orderId);
       setShowConfirmModal(false);
       setMessages([]); // Clear chat messages
-      Alert.alert('تم الإلغاء', 'تم إلغاء الطلب بنجاح.');
+      showCustomModal('success', 'تم الإلغاء', 'تم إلغاء الطلب بنجاح.');
       router.push('/(tabs)/chats'); // Navigate back to chats list
     } catch (error) {
       setShowConfirmModal(false);
-      Alert.alert('خطأ', 'حدث خطأ أثناء إلغاء الطلب. حاول مرة أخرى.');
+      showCustomModal('error', 'خطأ', 'حدث خطأ أثناء إلغاء الطلب. حاول مرة أخرى.');
     }
   };
 
@@ -273,7 +288,7 @@ const MessageScreen: React.FC = () => {
       } else {
         // If failed, remove the temp message
         setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
-        Alert.alert('خطأ', 'فشل في إرسال الرسالة');
+        showCustomModal('error', 'خطأ', 'فشل في إرسال الرسالة');
         return;
       }
       
@@ -285,10 +300,10 @@ const MessageScreen: React.FC = () => {
         price: proposal.price
       });
       
-      Alert.alert('نجح', 'تم قبول عرض السعر بنجاح');
+      // Removed success popup modal - user will see the button change to "تم القبول" instead
     } catch (error) {
       console.error('Error accepting price:', error);
-      Alert.alert('خطأ', 'فشل في قبول عرض السعر');
+      showCustomModal('error', 'خطأ', 'فشل في قبول عرض السعر');
     }
   };
 
@@ -338,7 +353,7 @@ const MessageScreen: React.FC = () => {
       } else {
         // If failed, remove the temp message
         setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
-        Alert.alert('خطأ', 'فشل في إرسال الرسالة');
+        showCustomModal('error', 'خطأ', 'فشل في إرسال الرسالة');
         return;
       }
       
@@ -350,10 +365,10 @@ const MessageScreen: React.FC = () => {
         price: proposal.price
       });
       
-      Alert.alert('مرفوض', 'تم رفض عرض السعر');
+      showCustomModal('warning', 'مرفوض', 'تم رفض عرض السعر');
     } catch (error) {
       console.error('Error rejecting price:', error);
-      Alert.alert('خطأ', 'فشل في رفض عرض السعر');
+      showCustomModal('error', 'خطأ', 'فشل في رفض عرض السعر');
     }
   };
 
@@ -367,19 +382,10 @@ const MessageScreen: React.FC = () => {
   const handleViewInvoice = async (messageId: string) => {
     try {
       // For now, show an alert. In the future, this could open a PDF or navigate to invoice screen
-      Alert.alert(
-        'عرض الفاتورة',
-        'سيتم فتح الفاتورة قريباً...',
-        [
-          {
-            text: 'حسناً',
-            style: 'default'
-          }
-        ]
-      );
+      showCustomModal('info', 'عرض الفاتورة', 'سيتم فتح الفاتورة قريباً...');
     } catch (error) {
       console.error('Error viewing invoice:', error);
-      Alert.alert('خطأ', 'فشل في عرض الفاتورة');
+      showCustomModal('error', 'خطأ', 'فشل في عرض الفاتورة');
     }
   };
 
@@ -388,7 +394,7 @@ const MessageScreen: React.FC = () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('خطأ', 'نحتاج إذن الكاميرا لالتقاط صورة');
+        showCustomModal('error', 'خطأ', 'نحتاج إذن الكاميرا لالتقاط صورة');
         return;
       }
 
@@ -403,12 +409,12 @@ const MessageScreen: React.FC = () => {
         const imageUri = result.assets[0].uri;
         // Here you would typically upload the image to your server
         // For now, we'll just show a success message
-        Alert.alert('نجح', 'تم التقاط الصورة بنجاح');
+        showCustomModal('success', 'نجح', 'تم التقاط الصورة بنجاح');
         console.log('Image captured:', imageUri);
       }
     } catch (error) {
       console.error('Error capturing image:', error);
-      Alert.alert('خطأ', 'فشل في التقاط الصورة');
+      showCustomModal('error', 'خطأ', 'فشل في التقاط الصورة');
     }
   };
 
@@ -425,12 +431,12 @@ const MessageScreen: React.FC = () => {
         const fileName = result.assets[0].name;
         // Here you would typically upload the file to your server
         // For now, we'll just show a success message
-        Alert.alert('نجح', `تم اختيار الملف: ${fileName}`);
+        showCustomModal('success', 'نجح', `تم اختيار الملف: ${fileName}`);
         console.log('File selected:', fileUri, fileName);
       }
     } catch (error) {
       console.error('Error selecting file:', error);
-      Alert.alert('خطأ', 'فشل في اختيار الملف');
+      showCustomModal('error', 'خطأ', 'فشل في اختيار الملف');
     }
   };
 
@@ -721,6 +727,15 @@ const MessageScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Custom Modal for all alerts */}
+      <CustomModal
+        visible={showModal}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setShowModal(false)}
+      />
     </View>
   );
 };

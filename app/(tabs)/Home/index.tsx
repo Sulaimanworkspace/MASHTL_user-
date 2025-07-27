@@ -167,10 +167,10 @@ const User4: React.FC = () => {
             try {
               console.log('📱 Attempting to send local notification...');
               await notificationService.sendLocalNotification({
-                title: notification.title || 'رسالة جديدة',
-                body: notification.message || 'لديك رسالة جديدة من المزارع',
-                data: notification
-              });
+              title: notification.title || 'رسالة جديدة',
+              body: notification.message || 'لديك رسالة جديدة من المزارع',
+              data: notification
+            });
               console.log('📱 Local notification sent successfully');
             } catch (error) {
               console.error('📱 Error sending local notification:', error);

@@ -84,7 +84,7 @@ class WebSocketService {
         this.reconnectAttempts = 0;
         this.currentUserId = userId;
       
-        // Join user room for notifications
+      // Join user room for notifications
         this.socket?.emit('join_user_room', userId);
         console.log(`👤 Joined user room: user_${userId}`);
         

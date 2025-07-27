@@ -107,9 +107,9 @@ const ChatInboxScreen: React.FC = () => {
     
         // Listen for order completion events
         webSocketService.on('order_completed', (data: { orderId: string }) => {
-          console.log('📱 User received order_completed event:', data.orderId);
-          setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
-        });
+      console.log('📱 User received order_completed event:', data.orderId);
+      setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
+    });
 
         // Listen for order cancelled events
         webSocketService.on('order_cancelled', (data: { orderId: string }) => {
@@ -138,7 +138,7 @@ const ChatInboxScreen: React.FC = () => {
     };
 
     if (isLoggedIn) {
-      initializeWebSocket();
+    initializeWebSocket();
     }
 
     return () => {
