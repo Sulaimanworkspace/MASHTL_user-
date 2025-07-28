@@ -105,30 +105,35 @@ const ChatInboxScreen: React.FC = () => {
         console.log('🔌 Initializing WebSocket in chat list...');
         await webSocketService.initialize();
     
-        // Listen for order completion events
-        webSocketService.on('order_completed', (data: { orderId: string }) => {
-      console.log('📱 User received order_completed event:', data.orderId);
-      setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
-    });
+        // Create event handler functions
+        const handleOrderCompleted = (data: { orderId: string }) => {
+          console.log('📱 User received order_completed event:', data.orderId);
+          setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
+        };
 
-        // Listen for order cancelled events
-        webSocketService.on('order_cancelled', (data: { orderId: string }) => {
+        const handleOrderCancelled = (data: { orderId: string }) => {
           console.log('📱 User received order_cancelled event:', data.orderId);
           setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
-        });
+        };
 
-        // Listen for order rejected events
-        webSocketService.on('order_rejected', (data: { orderId: string }) => {
+        const handleOrderRejected = (data: { orderId: string }) => {
           console.log('📱 User received order_rejected event:', data.orderId);
           setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
-        });
+        };
 
-        // Listen for new messages to update chat list
-        webSocketService.on('new_message', (message: any) => {
+        const handleNewMessage = (message: any) => {
           console.log('📱 User received new_message event in chat list:', message);
-          // Refresh chat orders to show updated last message
-          fetchChatOrders();
-        });
+          // Only refresh if not in a specific chat to avoid conflicts
+          if (!message.orderId || message.orderId !== 'current_chat') {
+            fetchChatOrders();
+          }
+        };
+
+        // Add event listeners
+        webSocketService.on('order_completed', handleOrderCompleted);
+        webSocketService.on('order_cancelled', handleOrderCancelled);
+        webSocketService.on('order_rejected', handleOrderRejected);
+        webSocketService.on('new_message', handleNewMessage);
         
         console.log('🔌 WebSocket initialized in chat list successfully');
       } catch (error) {
@@ -138,12 +143,12 @@ const ChatInboxScreen: React.FC = () => {
     };
 
     if (isLoggedIn) {
-    initializeWebSocket();
+      initializeWebSocket();
     }
 
     return () => {
       console.log('🔌 Cleaning up WebSocket listeners in chat list...');
-      // Clean up event listeners
+      // Clean up event listeners with specific handlers
       webSocketService.off('order_completed');
       webSocketService.off('order_cancelled');
       webSocketService.off('order_rejected');

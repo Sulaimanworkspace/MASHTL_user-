@@ -4,9 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // List of possible API URLs to try
 const POSSIBLE_URLS = [
   'http://172.20.10.12:9090/api',   // Your Mac's IP address
+  'http://localhost:9090/api',       // Local development
+  'http://127.0.0.1:9090/api',      // Local development alternative
   'http://10.0.2.2:9090/api',        // Android Emulator
-  'http://localhost:9090/api',       // iOS Simulator
-  'http://127.0.0.1:9090/api',      // iOS Simulator alternative
   'http://192.168.1.100:9090/api',  // Common local network IP
   'http://192.168.0.100:9090/api',  // Alternative local network IP
 ];
@@ -323,10 +323,11 @@ export const getUserServiceOrders = async () => {
   }
 };
 
-export const cancelServiceOrder = async (orderId: string) => {
+export const cancelServiceOrder = async (orderId: string, cancelReason?: string) => {
   try {
     const response = await api.put(`/service-orders/${orderId}/status`, {
-      status: 'cancelled'
+      status: 'cancelled',
+      cancelReason: cancelReason || 'تم الإلغاء من قبل المستخدم'
     });
     return response.data;
   } catch (error: any) {
@@ -461,6 +462,46 @@ export const getUserProjectRequests = async () => {
   } catch (error: any) {
     console.error('❌ Error fetching user project requests:', error);
     throw error;
+  }
+};
+
+// Update order price (when user accepts farmer's price proposal)
+export const updateOrderPrice = async (orderId: string, price: number) => {
+  try {
+    const response = await api.put(`/service-orders/${orderId}/price`, { price });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating order price:', error);
+    throw error;
+  }
+};
+
+// Complaint functions
+export const createComplaint = async (complaintData: {
+  complaintType: string;
+  title: string;
+  description: string;
+}) => {
+  try {
+    console.log('🔄 Creating complaint:', complaintData);
+    const response = await api.post('/complaints', complaintData);
+    console.log('✅ Complaint created successfully:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error creating complaint:', error);
+    throw new Error(error.response?.data?.message || 'Error creating complaint');
+  }
+};
+
+export const getUserComplaints = async () => {
+  try {
+    console.log('🔄 Fetching user complaints');
+    const response = await api.get('/complaints/user');
+    console.log('✅ User complaints fetched successfully:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error fetching user complaints:', error);
+    throw new Error(error.response?.data?.message || 'Error fetching complaints');
   }
 };
 

@@ -6,7 +6,7 @@ import { FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, StyleSheet,
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as MediaLibrary from 'expo-media-library';
-import { getChatHistory, sendChatMessage, getUserData, cancelServiceOrder } from '../../services/api';
+import { getChatHistory, sendChatMessage, getUserData, cancelServiceOrder, updateOrderPrice } from '../../services/api';
 import webSocketService from '../../services/websocket';
 import CustomModal from '../../components/CustomModal';
 import { notificationService } from '../../services/notifications';
@@ -109,8 +109,8 @@ const MessageScreen: React.FC = () => {
         // Join chat room
         webSocketService.joinChat(orderId);
 
-        // Listen for new messages
-        webSocketService.on('new_message', async (message: Message) => {
+        // Create event handler functions
+        const handleNewMessage = async (message: Message) => {
           console.log('📱 User received new message in chat:', message);
           console.log('📱 Current user ID:', userData._id);
           console.log('📱 Message sender ID:', message.sender._id);
@@ -128,22 +128,23 @@ const MessageScreen: React.FC = () => {
             });
             setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
             
-            // Show notification for new messages
-            try {
-              console.log('📱 Attempting to send notification...');
-              await notificationService.sendLocalNotification({
-                title: 'رسالة جديدة',
-                body: message.message || 'لديك رسالة جديدة من المزارع',
-                data: { orderId, farmerId }
-              });
-              console.log('📱 Notification sent successfully');
-            } catch (error) {
-              console.error('📱 Error sending notification:', error);
-            }
+            // Don't show notification here - it's handled by the home screen's new_notification listener
+            // This prevents duplicate notifications
+            console.log('📱 Message added to chat - notification handled by home screen');
           } else {
             console.log('📱 Message is from current user, not showing notification');
           }
-        });
+        };
+
+        const handleOrderStatusUpdate = (data: { orderId: string; status: string }) => {
+          if (data.orderId === orderId && data.status) {
+            setOrderStatus(data.status);
+          }
+        };
+
+        // Add event listeners
+        webSocketService.on('new_message', handleNewMessage);
+        webSocketService.on('order_status_update', handleOrderStatusUpdate);
 
         console.log('🔌 Chat initialized successfully for orderId:', orderId);
         setIsLoading(false);
@@ -162,21 +163,12 @@ const MessageScreen: React.FC = () => {
       // Leave chat room and clean up event listeners
       webSocketService.leaveChat();
       webSocketService.off('new_message');
+      webSocketService.off('order_status_update');
       isInitialized = false;
     };
   }, [orderId]);
 
-  // Listen for order status updates
-  useEffect(() => {
-    webSocketService.on('order_status_update', (data: { orderId: string; status: string }) => {
-      if (data.orderId === orderId && data.status) {
-        setOrderStatus(data.status);
-      }
-    });
-    return () => {
-      webSocketService.off('order_status_update');
-    };
-  }, [orderId]);
+  // Order status updates are now handled in the main useEffect above
 
   const handleSend = async () => {
     if (input.trim() === '' || !currentUser || !farmerId) return;
@@ -290,6 +282,15 @@ const MessageScreen: React.FC = () => {
         setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
         showCustomModal('error', 'خطأ', 'فشل في إرسال الرسالة');
         return;
+      }
+      
+      // Update the order price in the database
+      try {
+        await updateOrderPrice(orderId, proposal.price);
+        console.log('✅ Order price updated in database');
+      } catch (error) {
+        console.error('❌ Error updating order price in database:', error);
+        // Continue anyway since the message was sent successfully
       }
       
       // Send WebSocket event to farmer
@@ -642,7 +643,11 @@ const MessageScreen: React.FC = () => {
                   onPress={() => {
                     setShowCancelSheet(false);
                     if (orderStatus === 'accepted') {
-                      setShowConfirmModal(true);
+                      // Navigate to the new cancel order page
+                      router.push({
+                        pathname: '/(tabs)/chats/cancel-order',
+                        params: { orderId }
+                      });
                     } else {
                       setShowCannotCancelModal(true);
                     }
