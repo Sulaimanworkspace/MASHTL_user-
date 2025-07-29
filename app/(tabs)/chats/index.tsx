@@ -107,8 +107,8 @@ const ChatInboxScreen: React.FC = () => {
     
         // Create event handler functions
         const handleOrderCompleted = (data: { orderId: string }) => {
-          console.log('📱 User received order_completed event:', data.orderId);
-          setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
+      console.log('📱 User received order_completed event:', data.orderId);
+      setChatOrders(prev => prev.filter(order => order._id !== data.orderId));
         };
 
         const handleOrderCancelled = (data: { orderId: string }) => {
@@ -125,7 +125,7 @@ const ChatInboxScreen: React.FC = () => {
           console.log('📱 User received new_message event in chat list:', message);
           // Only refresh if not in a specific chat to avoid conflicts
           if (!message.orderId || message.orderId !== 'current_chat') {
-            fetchChatOrders();
+          fetchChatOrders();
           }
         };
 
@@ -143,7 +143,7 @@ const ChatInboxScreen: React.FC = () => {
     };
 
     if (isLoggedIn) {
-      initializeWebSocket();
+    initializeWebSocket();
     }
 
     return () => {
@@ -190,7 +190,18 @@ const ChatInboxScreen: React.FC = () => {
     >
         <View style={styles.avatarContainer}>
           <Animated.Image 
-            source={require('../../../assets/images/icon.jpg')}
+            source={
+              item.farmer?.avatar 
+                ? { uri: item.farmer.avatar }
+                : (() => {
+                    try {
+                      return require('../../../assets/images/icon.jpg');
+                    } catch (error) {
+                      console.error('Failed to load app icon:', error);
+                      return null;
+                    }
+                  })()
+            }
             style={[
               styles.avatar,
               { opacity: fadeAnim }
@@ -211,7 +222,7 @@ const ChatInboxScreen: React.FC = () => {
           />
           {imageError && (
             <View style={styles.imageErrorContainer}>
-              <FontAwesome5 name="image" size={20} color="#ccc" />
+              <FontAwesome5 name="user-circle" size={20} color="#ccc" />
             </View>
           )}
         </View>

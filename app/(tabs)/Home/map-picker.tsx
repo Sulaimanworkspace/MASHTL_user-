@@ -85,7 +85,7 @@ export default function MapPicker() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; direction: rtl; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
         #map { height: 100vh; width: 100%; touch-action: manipulation; }
         .info-card { position: absolute; top: 20px; left: 20px; right: 20px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; text-align: right; }
         .info-title { font-weight: bold; color: #333; margin-bottom: 5px; font-size: 14px; }

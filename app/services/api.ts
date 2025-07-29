@@ -505,4 +505,17 @@ export const getUserComplaints = async () => {
   }
 };
 
+// Invoice functions
+export const getInvoiceData = async (orderId: string) => {
+  try {
+    console.log('🔄 Fetching invoice data for order:', orderId);
+    const response = await api.get(`/service-orders/${orderId}/invoice`);
+    console.log('✅ Invoice data fetched successfully:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error fetching invoice data:', error);
+    throw new Error(error.response?.data?.message || 'Error fetching invoice data');
+  }
+};
+
 export default api; 

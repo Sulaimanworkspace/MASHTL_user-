@@ -382,8 +382,11 @@ const MessageScreen: React.FC = () => {
 
   const handleViewInvoice = async (messageId: string) => {
     try {
-      // For now, show an alert. In the future, this could open a PDF or navigate to invoice screen
-      showCustomModal('info', 'عرض الفاتورة', 'سيتم فتح الفاتورة قريباً...');
+      // Navigate to invoice screen
+      router.push({
+        pathname: '/(tabs)/chats/invoice',
+        params: { orderId: orderId }
+      });
     } catch (error) {
       console.error('Error viewing invoice:', error);
       showCustomModal('error', 'خطأ', 'فشل في عرض الفاتورة');
@@ -483,7 +486,11 @@ const MessageScreen: React.FC = () => {
               <View style={[styles.messageRow, isMyMessage ? styles.myMessageRow : styles.userMessageRow]}>
                 {!isMyMessage && (
                   <Image 
-                    source={require('../../../assets/images/icon.jpg')}
+                    source={
+                      item.sender.avatar 
+                        ? { uri: item.sender.avatar }
+                        : require('../../../assets/images/icon.jpg')
+                    }
                     style={styles.avatarSmall} 
                   />
                 )}

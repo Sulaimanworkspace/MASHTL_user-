@@ -10,7 +10,7 @@ class WebSocketService {
   private currentUserId: string | null = null;
   private currentOrderId: string | null = null;
 
-  private socketUrl = 'http://172.20.10.12:9090';
+  private socketUrl = 'http://localhost:9090';
 
   // Singleton pattern
   private static instance: WebSocketService;

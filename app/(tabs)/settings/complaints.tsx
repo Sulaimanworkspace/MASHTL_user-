@@ -15,6 +15,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { createComplaint, getUserComplaints } from '../../services/api';
+import { webSocketService } from '../../services/websocket';
+import { notificationService, sendNotificationFromWebSocket } from '../../services/notifications';
 
 interface Complaint {
   _id: string;
@@ -35,6 +37,7 @@ const Complaints: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string>('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const complaintTypes = [
     {
@@ -77,7 +80,61 @@ const Complaints: React.FC = () => {
 
   useEffect(() => {
     loadComplaints();
+    setupWebSocket();
+    setupNotifications();
+    
+    return () => {
+      // Cleanup WebSocket listeners
+      webSocketService.off('complaint_status_updated');
+      webSocketService.off('new_complaint');
+    };
   }, []);
+
+  const setupWebSocket = async () => {
+    try {
+      // Initialize WebSocket connection
+      await webSocketService.initialize();
+      
+      // Listen for complaint status updates
+      webSocketService.on('complaint_status_updated', (data: any) => {
+        console.log('🔔 Complaint status updated via WebSocket:', data);
+        
+        // Update the complaint in the list
+        setComplaints(prevComplaints => 
+          prevComplaints.map(complaint => 
+            complaint._id === data.complaintId 
+              ? { ...complaint, status: data.status, adminResponse: data.adminResponse }
+              : complaint
+          )
+        );
+        
+        // Send push notification
+        const statusText = getStatusText(data.status);
+        sendNotificationFromWebSocket({
+          title: 'تحديث حالة الشكوى',
+          body: `تم تحديث حالة شكواك إلى: ${statusText}`,
+          data: { type: 'complaint_update', complaintId: data.complaintId }
+        });
+      });
+      
+      // Listen for new complaints (if user submits from another device)
+      webSocketService.on('new_complaint', (data: any) => {
+        console.log('🔔 New complaint received via WebSocket:', data);
+        loadComplaints(); // Refresh the list
+      });
+      
+    } catch (error) {
+      console.error('❌ Error setting up WebSocket:', error);
+    }
+  };
+
+  const setupNotifications = async () => {
+    try {
+      await notificationService.initialize();
+    } catch (error) {
+      console.error('❌ Error setting up notifications:', error);
+    }
+  };
 
   const loadComplaints = async () => {
     try {
@@ -108,10 +165,15 @@ const Complaints: React.FC = () => {
       });
 
       if (response.success) {
-        Alert.alert('نجح', 'تم إرسال الشكوى بنجاح');
+        setShowSuccessMessage(true);
         setShowComplaintModal(false);
         resetForm();
         loadComplaints(); // Refresh the list
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 3000);
       }
     } catch (error: any) {
       Alert.alert('خطأ', error.message || 'فشل في إرسال الشكوى');
@@ -202,6 +264,14 @@ const Complaints: React.FC = () => {
           </View>
         ) : (
           <View style={styles.complaintsList}>
+            {/* Success Message */}
+            {showSuccessMessage && (
+              <View style={styles.successMessage}>
+                <MaterialIcons name="check-circle" size={20} color="#10b981" />
+                <Text style={styles.successMessageText}>تم إرسال الشكوى بنجاح</Text>
+              </View>
+            )}
+            
             <Text style={styles.sectionTitle}>شكاوىي السابقة</Text>
             {complaints.map((complaint) => (
               <View key={complaint._id} style={styles.complaintCard}>
@@ -229,6 +299,14 @@ const Complaints: React.FC = () => {
                 <Text style={styles.complaintDate}>{formatDate(complaint.createdAt)}</Text>
               </View>
             ))}
+            
+            {/* Add More Button - Always visible */}
+            <TouchableOpacity 
+              style={styles.addComplaintButton}
+              onPress={() => setShowComplaintModal(true)}
+            >
+              <Text style={styles.addComplaintButtonText}>إضافة شكوى جديدة</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -568,6 +646,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  successMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#d1fae5',
+    borderColor: '#10b981',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  successMessageText: {
+    fontSize: 14,
+    color: '#065f46',
+    fontWeight: '600',
+    marginLeft: 8,
+    textAlign: 'right',
+  },
+
   textInput: {
     borderWidth: 1,
     borderColor: '#ddd',
