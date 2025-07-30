@@ -2,8 +2,9 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useRef, useCallback } from 'react';
 import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { login, sendOTP, verifyOTP, storeUserData } from '../../services/api';
+import { login, sendOTP, verifyOTP, storeUserData, refreshUserDataFromServer } from '../../services/api';
 import webSocketService from '../../services/websocket';
+import notificationService from '../../services/notifications';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -135,9 +136,23 @@ export default function LoginScreen() {
       // Get user data after successful login verification
       const loginResult = await login(fullPhone, password);
       if (loginResult.success && loginResult.user) {
+        // Store basic user data first
         await storeUserData(loginResult.user);
+        console.log('✅ Basic user data stored after login');
+        
+        // The login response now includes location data, so we don't need to fetch profile immediately
+        // Profile refresh can happen later when needed (e.g., on Home screen focus)
+        console.log('✅ Login completed with location data included');
+        
         // Initialize WebSocket for the new user
         await webSocketService.initialize(loginResult.user._id);
+        
+        // Save push token to server after successful login
+        try {
+                      await notificationService.saveJWTTokenToServer();
+        } catch (error) {
+          console.log('⚠️ Could not save push token to server:', error);
+        }
       }
       
       // Success - navigate to home

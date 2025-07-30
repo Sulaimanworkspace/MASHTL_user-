@@ -5,6 +5,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, RefreshControl, Animated } from 'react-native';
 import { getUserData, getUserServiceOrders, getUnreadMessageCount } from '../../services/api';
 import webSocketService from '../../services/websocket';
+import SimpleUserAvatar from '../../components/SimpleUserAvatar';
 
 interface ChatOrder {
   _id: string;
@@ -28,8 +29,6 @@ const ChatInboxScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [chatOrders, setChatOrders] = useState<ChatOrder[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [imageErrors, setImageErrors] = useState<{[key: string]: boolean}>({});
-  const fadeAnimRefs = useRef<{[key: string]: Animated.Value}>({});
 
   // Fetch chat orders (orders with farmers but not completed)
   const fetchChatOrders = async () => {
@@ -76,7 +75,7 @@ const ChatInboxScreen: React.FC = () => {
           setIsLoading(true);
           console.log('🔍 Checking authentication status...');
           const userData = await getUserData();
-          if (!userData || !userData.name || !userData.token) {
+          if (!userData || !userData.token || (!userData.name && !userData._id)) {
             console.log('⚠️ User not authenticated, redirecting to login');
             router.replace('/(tabs)/auth/login');
             return;
@@ -164,13 +163,6 @@ const ChatInboxScreen: React.FC = () => {
   };
 
   const renderItem = ({ item }: { item: ChatOrder }) => {
-    // Get or create fade animation ref for this item
-    if (!fadeAnimRefs.current[item._id]) {
-      fadeAnimRefs.current[item._id] = new Animated.Value(0);
-    }
-    const fadeAnim = fadeAnimRefs.current[item._id];
-    const imageError = imageErrors[item._id] || false;
-
     return (
     <TouchableOpacity 
       style={styles.chatItem} 
@@ -188,37 +180,11 @@ const ChatInboxScreen: React.FC = () => {
         }
       }}
     >
-        <View style={styles.avatarContainer}>
-          <Animated.Image 
-            source={
-              item.farmer?.avatar 
-                ? { uri: item.farmer.avatar }
-                : require('../../../assets/images/icon.png')
-            }
-            style={[
-              styles.avatar,
-              { opacity: fadeAnim }
-            ]}
-            onLoadStart={() => {
-              fadeAnim.setValue(0);
-            }}
-            onLoad={() => {
-              Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 200,
-                useNativeDriver: true,
-              }).start();
-            }}
-            onError={() => {
-              setImageErrors(prev => ({ ...prev, [item._id]: true }));
-            }}
-          />
-          {imageError && (
-            <View style={styles.imageErrorContainer}>
-              <FontAwesome5 name="user-circle" size={20} color="#ccc" />
-            </View>
-          )}
-        </View>
+        <SimpleUserAvatar 
+          avatarUrl={item.farmer?.avatar}
+          size={48}
+          style={styles.avatarContainer}
+        />
       <View style={styles.chatInfo}>
         <View style={styles.chatHeader}>
           <Text style={styles.name}>{item.farmer?.name || 'مزارع'}</Text>
@@ -340,28 +306,8 @@ const styles = StyleSheet.create({
     borderColor: '#eee',
   },
   avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#e0e0e0',
     marginLeft: 14,
     marginRight: 0,
-    overflow: 'hidden',
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 24,
-  },
-  imageErrorContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#e0e0e0',
   },
   chatInfo: {
     flex: 1,

@@ -4,7 +4,7 @@
     "slug": "mashtl",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.jpg",
+    "icon": "./assets/images/icon.png",
     "scheme": "userapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
@@ -24,9 +24,9 @@
       "bundleIdentifier": "com.anonymous.mashtl"
     },
     "android": {
-      "icon": "./assets/images/icon.jpg",
+      "icon": "./assets/images/icon.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.jpg",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -43,18 +43,10 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/icon.jpg"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/icon.jpg",
-          "color": "#2E8B57",
-          "mode": "production"
-        }
-      ],
       "expo-web-browser"
     ],
     "experiments": {
@@ -63,7 +55,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "298f9159-3f1c-4cdb-97a8-8fc32fe63138"
       }
     }
   }

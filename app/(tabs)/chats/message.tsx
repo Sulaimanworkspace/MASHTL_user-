@@ -9,7 +9,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { getChatHistory, sendChatMessage, getUserData, cancelServiceOrder, updateOrderPrice } from '../../services/api';
 import webSocketService from '../../services/websocket';
 import CustomModal from '../../components/CustomModal';
-import { notificationService } from '../../services/notifications';
+import notificationService from '../../services/notifications';
 
 interface Message {
   _id: string;
@@ -106,6 +106,11 @@ const MessageScreen: React.FC = () => {
         // Initialize WebSocket connection
         await webSocketService.initialize(userData._id);
         
+        // Test WebSocket connection
+        console.log('🔌 WebSocket connection test:');
+        console.log('🔌 Is connected:', webSocketService.isConnected());
+        console.log('🔌 Current user ID:', webSocketService.getCurrentUserId());
+        
         // Join chat room
         webSocketService.joinChat(orderId);
 
@@ -143,6 +148,7 @@ const MessageScreen: React.FC = () => {
         };
 
         // Add event listeners
+        console.log('🔌 Adding new_message listener for orderId:', orderId);
         webSocketService.on('new_message', handleNewMessage);
         webSocketService.on('order_status_update', handleOrderStatusUpdate);
 
@@ -162,6 +168,7 @@ const MessageScreen: React.FC = () => {
       console.log('🔌 Cleaning up chat for orderId:', orderId);
       // Leave chat room and clean up event listeners
       webSocketService.leaveChat();
+      console.log('🔌 Removing new_message listener for orderId:', orderId);
       webSocketService.off('new_message');
       webSocketService.off('order_status_update');
       isInitialized = false;
@@ -169,6 +176,19 @@ const MessageScreen: React.FC = () => {
   }, [orderId]);
 
   // Order status updates are now handled in the main useEffect above
+
+  const testWebSocketConnection = () => {
+    console.log('🧪 Testing WebSocket connection...');
+    console.log('🧪 Is connected:', webSocketService.isConnected());
+    console.log('🧪 Current user ID:', webSocketService.getCurrentUserId());
+    console.log('🧪 Current order ID:', webSocketService.getCurrentOrderId());
+    
+    // Test emit
+    if (webSocketService.isConnected()) {
+      console.log('🧪 Emitting test message...');
+      webSocketService.emit('test_message', { message: 'Test from client', timestamp: Date.now() });
+    }
+  };
 
   const handleSend = async () => {
     if (input.trim() === '' || !currentUser || !farmerId) return;

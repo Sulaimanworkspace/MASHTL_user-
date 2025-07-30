@@ -10,7 +10,7 @@ class WebSocketService {
   private currentUserId: string | null = null;
   private currentOrderId: string | null = null;
 
-  private socketUrl = 'http://localhost:9090';
+  private socketUrl = 'http://172.20.10.12:9090';
 
   // Singleton pattern
   private static instance: WebSocketService;
@@ -91,6 +91,30 @@ class WebSocketService {
         // Listen for all events to debug
         this.socket.onAny((eventName: string, ...args: any[]) => {
           console.log(`🔌 WebSocket event received: ${eventName}`, args);
+        });
+
+        // Specific handling for new_message events
+        this.socket.on('new_message', (message: any) => {
+          console.log('🔌 WebSocket new_message received:', message);
+          console.log('🔌 Message orderId:', message.orderId);
+          console.log('🔌 Current orderId:', this.currentOrderId);
+          
+          // If we're in the same chat room, the message will be handled by the chat screen
+          if (message.orderId === this.currentOrderId) {
+            console.log('🔌 Message is for current chat room');
+          } else {
+            console.log('🔌 Message is for different chat room or general notification');
+          }
+        });
+
+        // Specific handling for new_notification events
+        this.socket.on('new_notification', (notification: any) => {
+          console.log('🔌 WebSocket new_notification received:', notification);
+          console.log('🔌 Notification title:', notification.title);
+          console.log('🔌 Notification message:', notification.message);
+          console.log('🔌 Notification type:', notification.type);
+          console.log('🔌 Notification userId:', notification.userId);
+          console.log('🔌 Current userId:', this.currentUserId);
         });
     });
 
@@ -177,8 +201,9 @@ class WebSocketService {
     if (!this.socket) {
       console.log('❌ Socket not available for event listener');
       return;
-  }
+    }
 
+    console.log(`🔌 Adding event listener for: ${event}`);
     this.socket.on(event, callback);
   }
 
@@ -188,6 +213,7 @@ class WebSocketService {
       return;
     }
 
+    console.log(`🔌 Removing event listener for: ${event}`);
     if (callback) {
       this.socket.off(event, callback);
     } else {
@@ -220,7 +246,31 @@ class WebSocketService {
     return this.currentOrderId;
   }
 
-  // Disconnect
+  // Test WebSocket connection
+  public async testConnection(): Promise<boolean> {
+    console.log('🧪 Testing WebSocket connection...');
+    console.log('🧪 Socket URL:', this.socketUrl);
+    console.log('🧪 Current connection status:', this.isConnected());
+    
+    if (!this.socket) {
+      console.log('🧪 No socket instance, creating one...');
+      await this.initialize();
+    }
+    
+    if (this.socket && this.socket.connected) {
+      console.log('✅ WebSocket connection test: SUCCESS');
+      console.log('🧪 Socket ID:', this.socket.id);
+      console.log('🧪 Current user ID:', this.currentUserId);
+      return true;
+    } else {
+      console.log('❌ WebSocket connection test: FAILED');
+      console.log('🧪 Socket exists:', !!this.socket);
+      console.log('🧪 Socket connected:', this.socket?.connected);
+      return false;
+    }
+  }
+
+  // Disconnect from WebSocket
   public disconnect(): void {
     if (this.socket) {
       console.log('🔌 Disconnecting WebSocket...');
@@ -254,4 +304,4 @@ class WebSocketService {
 
 // Export singleton instance
 export const webSocketService = WebSocketService.getInstance();
-export default webSocketService; 
+export default webSocketService;

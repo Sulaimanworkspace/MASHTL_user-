@@ -219,7 +219,7 @@ const User17: React.FC = () => {
         try {
           console.log('🔍 Checking authentication status...');
           const userData = await getUserData();
-          if (!userData || !userData.name || !userData.token) {
+          if (!userData || !userData.token || (!userData.name && !userData._id)) {
             console.log('⚠️ User not authenticated, redirecting to login');
             router.replace('/(tabs)/auth/login');
             return;

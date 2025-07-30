@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { createComplaint, getUserComplaints } from '../../services/api';
 import { webSocketService } from '../../services/websocket';
-import { notificationService, sendNotificationFromWebSocket } from '../../services/notifications';
+import notificationService, { sendNotificationFromWebSocket } from '../../services/notifications';
 
 interface Complaint {
   _id: string;

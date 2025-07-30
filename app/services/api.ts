@@ -102,11 +102,22 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
     console.error('❌ API Error:', error.message);
     if (error.response) {
       console.error('❌ Error status:', error.response.status);
       console.error('❌ Error data:', error.response.data);
+      
+      // Handle authentication errors (401, 403)
+      if (error.response.status === 401 || error.response.status === 403) {
+        console.log('🔐 Authentication error detected, clearing user data');
+        try {
+          await AsyncStorage.removeItem('user_data');
+          console.log('✅ User data cleared due to auth error');
+        } catch (clearError) {
+          console.error('❌ Error clearing user data:', clearError);
+        }
+      }
     }
     return Promise.reject(error);
   }
@@ -115,26 +126,71 @@ api.interceptors.response.use(
 // User storage functions
 export const storeUserData = async (userData: any) => {
   try {
-    console.log('Storing user data to AsyncStorage:', userData);
+    console.log('💾 Storing user data to AsyncStorage:', {
+      hasName: !!userData.name,
+      hasToken: !!userData.token,
+      hasId: !!userData._id
+    });
+    
+    // Ensure we have the essential data
+    if (!userData.token) {
+      console.error('❌ Cannot store user data without token');
+      return;
+    }
+    
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-    console.log('User data stored successfully');
+    console.log('✅ User data stored successfully');
+    
+    // Verify storage was successful
+    const storedData = await AsyncStorage.getItem('user_data');
+    if (!storedData) {
+      console.error('❌ User data storage verification failed');
+    }
   } catch (error) {
-    console.error('Error storing user data:', error);
+    console.error('❌ Error storing user data:', error);
   }
 };
 
 export const getUserData = async () => {
   try {
     const userData = await AsyncStorage.getItem('user_data');
-    const parsedData = userData ? JSON.parse(userData) : null;
-    console.log('Retrieved user data from AsyncStorage:', parsedData?.location ? {
-      address: parsedData.location.address,
-      latitude: parsedData.location.latitude,
-      longitude: parsedData.location.longitude
-    } : 'No location data');
+    if (!userData) {
+      console.log('📱 No user data found in AsyncStorage');
+      return null;
+    }
+    
+    const parsedData = JSON.parse(userData);
+    
+    // Validate the parsed data
+    if (!parsedData || typeof parsedData !== 'object') {
+      console.error('❌ Invalid user data format in AsyncStorage');
+      await AsyncStorage.removeItem('user_data');
+      return null;
+    }
+    
+    // Check for essential fields
+    if (!parsedData.token) {
+      console.error('❌ User data missing token, clearing invalid data');
+      await AsyncStorage.removeItem('user_data');
+      return null;
+    }
+    
+    console.log('📱 Retrieved user data from AsyncStorage:', {
+      hasName: !!parsedData.name,
+      hasToken: !!parsedData.token,
+      hasId: !!parsedData._id,
+      hasLocation: !!parsedData.location
+    });
+    
     return parsedData;
   } catch (error) {
-    console.error('Error getting user data:', error);
+    console.error('❌ Error getting user data:', error);
+    // Clear corrupted data
+    try {
+      await AsyncStorage.removeItem('user_data');
+    } catch (clearError) {
+      console.error('❌ Error clearing corrupted user data:', clearError);
+    }
     return null;
   }
 };
@@ -142,24 +198,61 @@ export const getUserData = async () => {
 export const isUserAuthenticated = async () => {
   try {
     const userData = await getUserData();
-    return userData && userData.token;
+    console.log('🔐 Checking authentication - userData:', userData ? {
+      hasName: !!userData.name,
+      hasToken: !!userData.token,
+      hasId: !!userData._id
+    } : 'null');
+    
+    // More lenient check for release builds
+    const isAuthenticated = userData && userData.token && (userData.name || userData._id);
+    console.log('🔐 Authentication result:', isAuthenticated);
+    return isAuthenticated;
   } catch (error) {
-    console.error('Error checking authentication:', error);
+    console.error('❌ Error checking authentication:', error);
     return false;
   }
 };
 
 export const refreshUserDataFromServer = async () => {
   try {
-    const response = await api.get('/auth/user-profile');
-    if (response.data && response.data.success) {
-      await AsyncStorage.setItem('user_data', JSON.stringify(response.data.data));
-      console.log('User data refreshed from server');
-      return response.data.data;
+    console.log('🔄 Attempting to refresh user data from server...');
+    
+    // Check if we have a valid token first
+    const userData = await getUserData();
+    if (!userData || !userData.token) {
+      console.log('❌ No user data or token available for profile refresh');
+      return null;
     }
-    return null;
+    
+    console.log('🔑 Using token for profile request:', userData.token.substring(0, 20) + '...');
+    
+    const response = await api.get('/auth/profile');
+    console.log('📥 Profile response received:', response.status);
+    
+    if (response.data && response.data.success) {
+      console.log('✅ Profile data received successfully');
+      
+      // Merge the fresh profile data with existing token and other essential fields
+      const refreshedData = {
+        ...response.data.data,
+        token: userData.token, // Preserve the token
+        userType: userData.userType || 'user' // Preserve userType
+      };
+      
+      await AsyncStorage.setItem('user_data', JSON.stringify(refreshedData));
+      console.log('💾 User data refreshed and stored with preserved token');
+      return refreshedData;
+    } else {
+      console.log('❌ Profile response not successful:', response.data);
+      return null;
+    }
   } catch (error) {
-    console.error('Error refreshing user data from server:', error);
+    console.error('❌ Error refreshing user data from server:', error);
+    if (error.response) {
+      console.error('❌ Response status:', error.response.status);
+      console.error('❌ Response data:', error.response.data);
+    }
     return null;
   }
 };
@@ -279,6 +372,26 @@ export const updateUserLocation = async (userId: string, locationData: {
     console.log('Location updated on server:', response.data);
     return response.data;
   } catch (error: any) {
+    throw error;
+  }
+};
+
+// Push token API functions
+export const updatePushToken = async (pushToken: string) => {
+  try {
+    console.log('📱 updatePushToken: Calling server with token:', pushToken);
+    console.log('📱 updatePushToken: Token length:', pushToken.length);
+    console.log('📱 updatePushToken: Token starts with ExponentPushToken:', pushToken.startsWith('ExponentPushToken'));
+    
+    const response = await api.put('/auth/update-push-token', { pushToken });
+    console.log('✅ Push token updated on server:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error updating push token:', error);
+    if (error.response) {
+      console.error('❌ Response status:', error.response.status);
+      console.error('❌ Response data:', error.response.data);
+    }
     throw error;
   }
 };

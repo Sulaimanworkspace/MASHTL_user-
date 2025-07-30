@@ -18,6 +18,7 @@ import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import Colors from '../_colors';
 import { getUserData, updateUserLocation, storeUserData } from '../services/api';
+import { ensureFreshUserData } from '../utils/userDataManager';
 
 const { width, height } = Dimensions.get('window');
 

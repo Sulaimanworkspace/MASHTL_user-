@@ -78,7 +78,7 @@ const User19: React.FC = () => {
         try {
           const userData = await getUserData();
           console.log('⚙️ Settings - checking auth status:', userData);
-          if (userData && userData.name) {
+          if (userData && userData.token && (userData.name || userData._id)) {
             setIsLoggedIn(true);
             console.log('✅ User is logged in');
           } else {

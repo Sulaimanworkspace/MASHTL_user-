@@ -14,10 +14,10 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getUserData, getNotificationCount, getServices } from '../../services/api';
+import { getUserData, getNotificationCount, getServices, refreshUserDataFromServer } from '../../services/api';
+import { ensureFreshUserData } from '../../utils/userDataManager';
 import webSocketService from '../../services/websocket';
-import { notificationService } from '../../services/notifications';
-import * as Notifications from 'expo-notifications';
+import notificationService from '../../services/notifications';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 import LocationPickerModal from '../../components/LocationPickerModal';
@@ -300,10 +300,12 @@ const User4: React.FC = () => {
       const loadUserData = async () => {
         try {
           setIsLoading(true);
+          // Use getUserData directly instead of ensureFreshUserData to avoid immediate profile refresh
           const userData = await getUserData();
           console.log('📱 Home screen focused - checking user data:', userData);
-          if (userData && userData.name) {
-            setUserName(userData.name);
+          
+          if (userData && userData.token && (userData.name || userData._id)) {
+            setUserName(userData.name || 'مستخدم');
             setIsLoggedIn(true);
             // Load user's saved location or show location picker prompt
             if (userData.location && userData.location.address) {
@@ -326,6 +328,18 @@ const User4: React.FC = () => {
             }).catch(error => {
               console.error('Error loading notification count:', error);
               setNotificationCount(0);
+            });
+            
+            // Save JWT token to server if user is logged in
+            notificationService.saveJWTTokenToServer().catch((error: any) => {
+              console.log('⚠️ Could not save JWT token to server:', error);
+            });
+            
+            // Test JWT token saving (for debugging)
+            notificationService.testJWTSaving().then((result: boolean) => {
+              console.log('🧪 Test JWT token saving result:', result);
+            }).catch((error: any) => {
+              console.log('🧪 Test JWT token saving error:', error);
             });
           } else {
             setUserName('بك في مشتل');
@@ -500,7 +514,7 @@ const User4: React.FC = () => {
             onPress={isLoggedIn ? handleNotificationPress : () => router.replace('/(tabs)/auth/login')}
             >
             </TouchableOpacity>
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
               style={[styles.notificationButton, { marginLeft: 10, backgroundColor: '#ff6b6b' }]}
               onPress={requestNotificationPermission}
             >
@@ -516,6 +530,34 @@ const User4: React.FC = () => {
                   </Text>
                 </View>
               )}
+            </TouchableOpacity> */}
+            {/* <TouchableOpacity 
+              style={[styles.notificationButton, { marginLeft: 10, backgroundColor: '#4CAF50' }]}
+              onPress={async () => {
+                console.log('🧪 Test notification button pressed');
+                const success = await notificationService.testNotification();
+                if (success) {
+                  alert('Test notification sent! Check your device notifications.');
+                } else {
+                  alert('Test notification failed. Check console for details.');
+                }
+              }}
+            >
+              <Text style={{ color: 'white', fontSize: 12 }}>🧪</Text>
+            </TouchableOpacity> */}
+            <TouchableOpacity 
+              style={[styles.notificationButton, { marginLeft: 10, backgroundColor: '#2196F3' }]}
+              onPress={async () => {
+                console.log('🔌 Test WebSocket button pressed');
+                const success = await webSocketService.testConnection();
+                if (success) {
+                  alert('WebSocket connection test: SUCCESS!');
+                } else {
+                  alert('WebSocket connection test: FAILED! Check console for details.');
+                }
+              }}
+            >
+              <Text style={{ color: 'white', fontSize: 12 }}>🔌</Text>
             </TouchableOpacity>
         </View>
       </View>
