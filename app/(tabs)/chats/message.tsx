@@ -1057,22 +1057,22 @@ const styles = StyleSheet.create({
   },
   priceProposalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 6,
+    justifyContent: 'center',
+    gap: 8,
     marginTop: 8,
   },
   priceButton: {
-    flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,
     shadowRadius: 2,
     elevation: 2,
-    minHeight: 32,
+    minHeight: 28,
+    minWidth: 80,
   },
   acceptButton: {
     backgroundColor: '#4CAF50',
@@ -1082,7 +1082,7 @@ const styles = StyleSheet.create({
   },
   priceButtonText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   respondedButton: {
