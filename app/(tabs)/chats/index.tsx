@@ -193,14 +193,7 @@ const ChatInboxScreen: React.FC = () => {
             source={
               item.farmer?.avatar 
                 ? { uri: item.farmer.avatar }
-                : (() => {
-                    try {
-                      return require('../../../assets/images/icon.jpg');
-                    } catch (error) {
-                      console.error('Failed to load app icon:', error);
-                      return null;
-                    }
-                  })()
+                : require('../../../assets/images/icon.png')
             }
             style={[
               styles.avatar,

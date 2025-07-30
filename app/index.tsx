@@ -143,7 +143,7 @@ export default function SplashScreen() {
         <View style={styles.iconWrapper}>
           {/* App Icon */}
           <Image
-            source={require('../assets/images/icon.jpg')}
+            source={require('../assets/images/icon.png')}
             style={styles.appIcon}
             resizeMode="cover"
           />

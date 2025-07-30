@@ -489,7 +489,7 @@ const MessageScreen: React.FC = () => {
                     source={
                       item.sender.avatar 
                         ? { uri: item.sender.avatar }
-                        : require('../../../assets/images/icon.jpg')
+                        : require('../../../assets/images/icon.png')
                     }
                     style={styles.avatarSmall} 
                   />

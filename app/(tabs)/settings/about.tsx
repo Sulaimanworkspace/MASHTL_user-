@@ -50,7 +50,7 @@ const About: React.FC = () => {
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../../assets/images/icon.jpg')}
+              source={require('../../../assets/images/icon.png')}
               style={styles.logo}
             />
           </View>

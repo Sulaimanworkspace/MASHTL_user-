@@ -156,7 +156,7 @@ export default function LoginScreen() {
       <View style={styles.outerContainer}>
         <StatusBar barStyle="dark-content" backgroundColor="#222" />
         <View style={styles.container}>
-          <Image source={require('../../../assets/images/icon.jpg')} style={styles.logo} resizeMode="contain" />
+          <Image source={require('../../../assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>تسجيل الدخول</Text>
           
           <View style={styles.phoneContainer}>

@@ -322,7 +322,7 @@ export default function SearchingFarmsScreen() {
       </View>
       <View style={styles.content}>
         <Image
-          source={require('../../../assets/images/icon.jpg')}
+          source={require('../../../assets/images/icon.png')}
           style={styles.logo}
           resizeMode="contain"
         />

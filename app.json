@@ -19,7 +19,7 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة"
       },
       "config": {
-        "googleMapsApiKey": "AIzaSyDemoKeyForDevelopment123456789"
+        "googleMapsApiKey": "AIzaSyAymUZ38EmOE01tkStI0Rtm0YeYOIU5kYw"
       },
       "bundleIdentifier": "com.anonymous.mashtl"
     },

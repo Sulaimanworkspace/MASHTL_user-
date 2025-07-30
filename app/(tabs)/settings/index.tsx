@@ -206,7 +206,7 @@ const User19: React.FC = () => {
         />
 
         <MenuListItem
-          iconImage={require('../../../assets/images/icon.jpg')}
+          iconImage={require('../../../assets/images/icon.png')}
           title="عن مشتل"
           rightIconFamily="FontAwesome"
           onPress={() => router.push('/(tabs)/settings/about')}
