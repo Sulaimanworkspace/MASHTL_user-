@@ -172,12 +172,12 @@ const Wallet: React.FC = () => {
       </View>
       )}
 
-      {/* Bottom Button */}
-      <View style={styles.buttonWrapper}>
+      {/* Bottom Button - Hidden */}
+      {/* <View style={styles.buttonWrapper}>
         <TouchableOpacity style={styles.addButton}>
           <Text style={styles.addButtonText}>اضافة رصيد للمحفظة</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </View>
   );
 };

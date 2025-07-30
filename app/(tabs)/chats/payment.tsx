@@ -269,14 +269,7 @@ export default function PaymentPage() {
       if (response.ok && result.success) {
         console.log('🎉 Payment completed successfully');
         
-        // Update order status in backend
-        console.log('🔄 Updating order status in backend...');
-        try {
-          await updateOrderStatus();
-        } catch (error) {
-          console.error('⚠️ Order status update failed, but payment was successful:', error);
-          // Continue with success flow even if order status update fails
-        }
+
 
         // Save card only if user explicitly chose to
         if (saveCard) {
@@ -289,26 +282,15 @@ export default function PaymentPage() {
           }
         }
         
-        Alert.alert(
-          'نجح الدفع',
-          'تم إتمام عملية الدفع بنجاح',
-          [
-            {
-              text: 'حسناً',
-              onPress: () => {
-                console.log('🔄 Navigating to invoice page with success status...');
-                // Navigate to invoice page with success status
-                router.push({
-                  pathname: '/chats/invoice',
-                  params: { 
-                    orderId: orderId,
-                    paymentSuccess: 'true'
-                  }
-                });
-              }
-            }
-          ]
-        );
+        // Navigate directly to invoice page with success status
+        console.log('🔄 Navigating to invoice page with success status...');
+        router.push({
+          pathname: '/chats/invoice',
+          params: { 
+            orderId: orderId,
+            paymentSuccess: 'true'
+          }
+        });
       } else {
         console.log('❌ Payment failed:', result.message);
         throw new Error(result.message || 'Payment failed');
@@ -325,44 +307,7 @@ export default function PaymentPage() {
     }
   };
 
-  const updateOrderStatus = async () => {
-    try {
-      const user = await getUserData();
-      const token = user?.token;
-      
-      if (!user || !token) {
-        console.error('❌ No user or token found for order status update');
-        return;
-      }
-      
-      console.log('🔄 Updating order status for order:', orderId);
-      console.log('🔄 Using token:', token ? 'Token exists' : 'No token');
-      
-      const response = await fetch(`http://172.20.10.12:9090/api/payments/${orderId}/payment-status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          paymentStatus: 'paid',
-          paymentDate: new Date().toISOString(),
-        }),
-      });
 
-      console.log('📡 Order status update response status:', response.status);
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Order status updated successfully:', result);
-      } else {
-        const errorText = await response.text();
-        console.error('❌ Failed to update order status:', errorText);
-      }
-    } catch (error) {
-      console.error('❌ Error updating order status:', error);
-    }
-  };
 
   // Saved Cards Functions
   const handleRefreshCards = async () => {

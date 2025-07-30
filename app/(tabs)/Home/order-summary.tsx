@@ -1,10 +1,10 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, Alert } from 'react-native';
 import Colors from '../../_colors';
-import { getUserData } from '../../services/api';
+import { getUserData, getServices } from '../../services/api';
 import LocationPickerModal from '../../components/LocationPickerModal';
 
 export default function OrderSummaryScreen() {
@@ -21,14 +21,49 @@ export default function OrderSummaryScreen() {
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [services, setServices] = useState<any[]>([]);
+  const [servicesLoaded, setServicesLoaded] = useState(false);
+  const [notesKey, setNotesKey] = useState(0);
 
-  // Load user location when screen is focused
+  // Load services on component mount
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        console.log('🔄 Loading services for order validation...');
+        const response = await getServices();
+        if (response.success && response.data) {
+          setServices(response.data);
+          console.log('✅ Services loaded for validation:', response.data.length);
+        } else {
+          console.log('⚠️ No services loaded from API');
+          setServices([]);
+        }
+      } catch (error) {
+        console.error('❌ Error loading services:', error);
+        setServices([]);
+      } finally {
+        setServicesLoaded(true);
+      }
+    };
+    
+    loadServices();
+  }, []);
+
+  // Clear notes and reset key when screen is focused
   useFocusEffect(
     React.useCallback(() => {
+      console.log('🧹 Screen focused - clearing notes and resetting key');
+      setNotes('');
+      setNotesKey(prev => prev + 1);
       setShowWarning(true);
       loadUserLocation();
     }, [])
   );
+
+  // Debug: Log when notes state changes
+  useEffect(() => {
+    console.log('📝 Notes state changed to:', notes);
+  }, [notes]);
 
   const loadUserLocation = async () => {
     try {
@@ -77,11 +112,16 @@ export default function OrderSummaryScreen() {
     // Proceed with order submission
     setLoading(true);
     try {
-      if ([
-        'زراعة الأشجار',
-        'تنسيق الحدائق',
-        'زراعة ثيل'
-      ].includes(projectName as string)) {
+      // Check if the service exists in the fetched services list
+      const serviceExists = services.some(service => 
+        service.title === projectName || 
+        service.serviceType === projectName ||
+        service._id === projectName
+      );
+      
+      console.log('🔍 Checking service:', projectName, 'Exists:', serviceExists, 'Total services:', services.length);
+      
+      if (serviceExists) {
         router.push({
           pathname: '/(tabs)/Home/searching-farms',
           params: {
@@ -91,6 +131,9 @@ export default function OrderSummaryScreen() {
             notes: notes
           }
         });
+      } else {
+        console.log('❌ Service not found in available services');
+        Alert.alert('خطأ', 'الخدمة غير متوفرة حالياً');
       }
     } catch (error) {
       console.error('Error submitting order:', error);
@@ -195,6 +238,7 @@ export default function OrderSummaryScreen() {
           <Text style={styles.sectionTitle}>ملاحظات</Text>
           <View style={styles.notesBox}>
             <TextInput
+              key={`notes-${notesKey}`}
               style={styles.notesInput}
               placeholder="أضف أي ملاحظات إضافية هنا..."
               placeholderTextColor="#bbb"

@@ -314,12 +314,19 @@ const MessageScreen: React.FC = () => {
       }
       
       // Send WebSocket event to farmer
+      console.log('💰 Emitting price_proposal_response event:', {
+        orderId,
+        farmerId,
+        status: 'accepted',
+        price: proposal.price
+      });
       webSocketService.emit('price_proposal_response', {
         orderId,
         farmerId,
         status: 'accepted',
         price: proposal.price
       });
+      console.log('💰 Price proposal response event emitted successfully');
       
       // Removed success popup modal - user will see the button change to "تم القبول" instead
     } catch (error) {
@@ -379,12 +386,19 @@ const MessageScreen: React.FC = () => {
       }
       
       // Send WebSocket event to farmer
+      console.log('💰 Emitting price_proposal_response event (rejected):', {
+        orderId,
+        farmerId,
+        status: 'rejected',
+        price: proposal.price
+      });
       webSocketService.emit('price_proposal_response', {
         orderId,
         farmerId,
         status: 'rejected',
         price: proposal.price
       });
+      console.log('💰 Price proposal rejection event emitted successfully');
       
       showCustomModal('warning', 'مرفوض', 'تم رفض عرض السعر');
     } catch (error) {

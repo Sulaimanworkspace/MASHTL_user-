@@ -166,7 +166,7 @@ export default function SearchingFarmsScreen() {
           }
 
           // Get notes from params or use default
-          const notes = (params.notes as string) || 'طلب جديد من التطبيق';
+          const notes = (params.notes as string)?.trim() || 'لا يوجد ملاحظات';
           
           const orderData = {
             serviceType,

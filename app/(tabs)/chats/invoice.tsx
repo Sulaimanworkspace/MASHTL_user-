@@ -105,34 +105,7 @@ const InvoiceScreen: React.FC = () => {
         await webSocketService.initialize();
         webSocketService.joinChat(orderId);
         
-        // Listen for payment status updates
-        webSocketService.on('payment_status_updated', (data) => {
-          console.log('💰 Payment status update received in user app:', data);
-          if (data.orderId === orderId) {
-            // Update payment status based on received data
-            let newPaymentStatus = 'pending';
-            let newPaymentMessage = 'تم إصدار الفاتورة - في انتظار الدفع';
-            
-            if (data.paymentStatus === 'Paid') {
-              newPaymentStatus = 'paid';
-              newPaymentMessage = 'تم إصدار الفاتورة - تم الدفع بنجاح';
-            } else if (data.paymentStatus === 'Failed') {
-              newPaymentStatus = 'failed';
-              newPaymentMessage = 'تم إصدار الفاتورة - فشل في الدفع';
-            } else if (data.paymentStatus === 'Cancelled') {
-              newPaymentStatus = 'cancelled';
-              newPaymentMessage = 'تم إصدار الفاتورة - تم إلغاء الدفع';
-            }
-            
-            setInvoiceData(prev => ({
-              ...prev,
-              paymentStatus: newPaymentStatus,
-              paymentMessage: newPaymentMessage
-            }));
-            
-            console.log('✅ Payment status updated in user app:', newPaymentStatus);
-          }
-        });
+
       } catch (error) {
         console.error('❌ Error initializing WebSocket:', error);
       }
@@ -147,10 +120,7 @@ const InvoiceScreen: React.FC = () => {
       showCustomModal('success', 'نجح الدفع', 'تم إتمام عملية الدفع بنجاح!');
     }
 
-    return () => {
-      // Cleanup WebSocket listeners
-      webSocketService.off('payment_status_updated');
-    };
+
   }, [orderId, params.paymentSuccess]);
 
   const handlePayment = () => {
@@ -305,39 +275,7 @@ const InvoiceScreen: React.FC = () => {
               </Text>
             </View>
 
-            {/* Refresh Button for Payment Status */}
-            {invoiceData.paymentStatus === 'pending' && (
-              <TouchableOpacity
-                style={styles.refreshButton}
-                onPress={async () => {
-                  try {
-                    setLoading(true);
-                    const response = await getInvoiceData(orderId);
-                    if (response?.success && response?.data) {
-                      const data = response.data;
-                      setInvoiceData({
-                        serviceType: data.serviceType,
-                        area: data.area || '200 متر مربع',
-                        location: data.location || 'حي النرجس, الرياض',
-                        date: data.date,
-                        serviceCost: data.serviceCost,
-                        vat: data.vat,
-                        totalAmount: data.totalAmount,
-                        paymentStatus: data.paymentStatus || 'pending',
-                        paymentMessage: data.paymentMessage || 'تم إصدار الفاتورة - في انتظار الدفع'
-                      });
-                    }
-                  } catch (error: any) {
-                    console.error('Error refreshing payment status:', error);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                <MaterialIcons name="refresh" size={20} color="#4CAF50" />
-                <Text style={styles.refreshButtonText}>تحديث حالة الدفع</Text>
-              </TouchableOpacity>
-            )}
+
           </>
         )}
       </ScrollView>
