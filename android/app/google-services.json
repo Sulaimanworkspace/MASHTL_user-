@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1033020474154",
+    "project_id": "deenmuapp-2b18c",
+    "storage_bucket": "deenmuapp-2b18c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1033020474154:android:3034731506a84e39e49453",
+        "android_client_info": {
+          "package_name": "com.mashtlapp.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBx0p3xx74O-mqwsSha-V0v-SMWQkwHegU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
