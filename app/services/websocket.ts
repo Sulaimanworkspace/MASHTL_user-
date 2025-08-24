@@ -84,14 +84,12 @@ class WebSocketService {
         this.reconnectAttempts = 0;
         this.currentUserId = userId;
       
-      // Join user room for notifications
+        // Join user room for notifications
         this.socket?.emit('join_user_room', userId);
         console.log(`👤 Joined user room: user_${userId}`);
         
-        // Listen for all events to debug
-        this.socket.onAny((eventName: string, ...args: any[]) => {
-          console.log(`🔌 WebSocket event received: ${eventName}`, args);
-        });
+        // Listen for specific events instead of onAny (which doesn't exist)
+        console.log('🔌 Setting up WebSocket event listeners...');
 
         // Specific handling for new_message events
         this.socket.on('new_message', (message: any) => {
@@ -116,7 +114,7 @@ class WebSocketService {
           console.log('🔌 Notification userId:', notification.userId);
           console.log('🔌 Current userId:', this.currentUserId);
         });
-    });
+      });
 
       this.socket.on('connect_error', (error: any) => {
         console.error('❌ WebSocket connection error:', error);

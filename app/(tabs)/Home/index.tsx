@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserData, getNotificationCount, getServices, refreshUserDataFromServer } from '../../services/api';
 import { ensureFreshUserData } from '../../utils/userDataManager';
 import webSocketService from '../../services/websocket';
-import notificationService from '../../services/notifications';
+import { notificationService } from '../../services/notifications';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 import LocationPickerModal from '../../components/LocationPickerModal';
