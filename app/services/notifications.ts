@@ -87,15 +87,10 @@ export async function schedulePushNotification(title: string, body: string) {
   }
 }
 
-// Notification Service Class
+// Simplified Notification Service
 class NotificationService {
-  private static instance: NotificationService;
-  
-  public static getInstance(): NotificationService {
-    if (!NotificationService.instance) {
-      NotificationService.instance = new NotificationService();
-    }
-    return NotificationService.instance;
+  constructor() {
+    console.log('🔧 [NOTIFICATIONS] NotificationService constructor called');
   }
 
   // Initialize notification service
@@ -116,58 +111,6 @@ class NotificationService {
     } catch (error) {
       console.log('⚠️ [NOTIFICATIONS] Error initializing notification service:', error);
       return false;
-    }
-  }
-
-  // Save JWT token to server for push notifications
-  public async saveJWTTokenToServer(): Promise<void> {
-    try {
-      console.log('🔑 [NOTIFICATIONS] Saving JWT token to server...');
-      
-      // Get the push token
-      const pushToken = await registerForPushNotificationsAsync();
-      
-      if (!pushToken) {
-        console.log('⚠️ [NOTIFICATIONS] No push token available - skipping server registration');
-        return;
-      }
-
-      // Get user data from storage
-      const AsyncStorage = require('@react-native-async-storage/async-storage');
-      const userData = await AsyncStorage.getItem('user_data');
-      
-      if (!userData) {
-        console.log('⚠️ [NOTIFICATIONS] No user data available');
-        return;
-      }
-
-      const parsedUserData = JSON.parse(userData);
-      const userId = parsedUserData._id;
-      const userToken = parsedUserData.token;
-
-      if (!userId || !userToken) {
-        console.log('⚠️ [NOTIFICATIONS] Missing user ID or token');
-        return;
-      }
-
-      // Import API service
-      const { api } = require('./api');
-      
-      // Save token to server
-      const response = await api.post('/notifications/register-token', {
-        userId,
-        pushToken,
-        platform: Platform.OS
-      });
-
-      if (response.data && response.data.success) {
-        console.log('✅ [NOTIFICATIONS] JWT token saved to server successfully');
-      } else {
-        console.log('⚠️ [NOTIFICATIONS] Server response not successful');
-      }
-    } catch (error) {
-      console.log('⚠️ [NOTIFICATIONS] Error saving JWT token to server:', error);
-      // Don't throw error to prevent app crash
     }
   }
 
@@ -213,21 +156,40 @@ class NotificationService {
       return null;
     }
   }
-
-  // Test JWT saving functionality
-  public async testJWTSaving(): Promise<void> {
-    try {
-      console.log('🧪 [NOTIFICATIONS] Testing JWT saving functionality...');
-      await this.saveJWTTokenToServer();
-      console.log('✅ [NOTIFICATIONS] JWT saving test completed');
-    } catch (error) {
-      console.log('⚠️ [NOTIFICATIONS] JWT saving test failed:', error);
-    }
-  }
 }
 
+// Create and export singleton instance
+const notificationServiceInstance = new NotificationService();
+console.log('🔧 [NOTIFICATIONS] Created notification service instance:', notificationServiceInstance);
+console.log('🔧 [NOTIFICATIONS] Instance type:', typeof notificationServiceInstance);
+console.log('🔧 [NOTIFICATIONS] Instance has initialize method:', typeof notificationServiceInstance.initialize);
+
 // Export singleton instance
-export const notificationService = NotificationService.getInstance();
+export const notificationService = notificationServiceInstance;
 
 // Export the class for testing
-export { NotificationService }; 
+export { NotificationService };
+
+// Add default export for compatibility
+export default notificationServiceInstance;
+
+// Add missing function for WebSocket notifications
+export const sendNotificationFromWebSocket = (notification: any) => {
+  try {
+    console.log('🔔 [NOTIFICATIONS] Sending WebSocket notification:', notification);
+    
+    // Send local notification
+    if (notificationServiceInstance && typeof notificationServiceInstance.sendLocalNotification === 'function') {
+      notificationServiceInstance.sendLocalNotification({
+        title: notification.title || 'إشعار جديد',
+        body: notification.message || notification.body || 'لديك إشعار جديد',
+        data: notification.data || {}
+      });
+      console.log('✅ [NOTIFICATIONS] WebSocket notification sent successfully');
+    } else {
+      console.log('⚠️ [NOTIFICATIONS] notificationServiceInstance is not properly initialized');
+    }
+  } catch (error) {
+    console.log('⚠️ [NOTIFICATIONS] Error sending WebSocket notification:', error);
+  }
+}; 

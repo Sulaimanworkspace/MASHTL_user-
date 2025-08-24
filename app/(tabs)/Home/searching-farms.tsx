@@ -312,9 +312,6 @@ export default function SearchingFarmsScreen() {
           end={{ x: 0, y: 1 }}
         />
         <View style={styles.navContent}>
-          <TouchableOpacity style={styles.backButton} onPress={() => setShowModal(true)}>
-            <FontAwesome5 name="arrow-right" size={20} color="#fff" />
-          </TouchableOpacity>
           <View style={styles.titleContainer}>
             <Text style={styles.headerTitle}>جاري البحث</Text>
           </View>
@@ -333,6 +330,13 @@ export default function SearchingFarmsScreen() {
         </View>
         <Text style={styles.mainText}>جارِ البحث عن أقرب مزارع...</Text>
         <Text style={styles.subText}>نحن نبحث عن أفضل مزارع بالقرب منك</Text>
+        
+        <TouchableOpacity 
+          style={styles.cancelButton} 
+          onPress={() => setShowModal(true)}
+        >
+          <Text style={styles.cancelButtonText}>إلغاء البحث</Text>
+        </TouchableOpacity>
       </View>
       {/* Modal for back warning */}
       <Modal visible={showModal} transparent animationType="fade">
@@ -542,6 +546,20 @@ const styles = StyleSheet.create({
   subText: {
     fontSize: 15,
     color: '#666',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  cancelButton: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
     textAlign: 'center',
   },
   modalOverlay: {
