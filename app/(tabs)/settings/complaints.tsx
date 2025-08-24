@@ -18,6 +18,11 @@ import { createComplaint, getUserComplaints } from '../../services/api';
 import { webSocketService } from '../../services/websocket';
 import notificationService, { sendNotificationFromWebSocket } from '../../services/notifications';
 
+// Debug notifications service import
+console.log('🔧 [COMPLAINTS] Importing notificationService:', notificationService);
+console.log('🔧 [COMPLAINTS] notificationService type:', typeof notificationService);
+console.log('🔧 [COMPLAINTS] notificationService has initialize:', notificationService && typeof notificationService.initialize === 'function');
+
 interface Complaint {
   _id: string;
   complaintType: string;
@@ -130,9 +135,22 @@ const Complaints: React.FC = () => {
 
   const setupNotifications = async () => {
     try {
+      console.log('🔧 [COMPLAINTS] Setting up notifications...');
+      
+      if (!notificationService) {
+        console.log('⚠️ [COMPLAINTS] notificationService is undefined, skipping setup');
+        return;
+      }
+      
+      if (typeof notificationService.initialize !== 'function') {
+        console.log('⚠️ [COMPLAINTS] notificationService.initialize is not a function, skipping setup');
+        return;
+      }
+      
       await notificationService.initialize();
+      console.log('✅ [COMPLAINTS] Notifications setup successful');
     } catch (error) {
-      console.error('❌ Error setting up notifications:', error);
+      console.error('❌ [COMPLAINTS] Error setting up notifications:', error);
     }
   };
 

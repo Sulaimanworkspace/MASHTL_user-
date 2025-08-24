@@ -23,6 +23,11 @@ import CustomFooter from '../../components/CustomFooter';
 import LocationPickerModal from '../../components/LocationPickerModal';
 import TwoFactorTest from '../../components/TwoFactorTest';
 
+// Debug notifications service import
+console.log('🔧 [HOME] Importing notificationService:', notificationService);
+console.log('🔧 [HOME] notificationService type:', typeof notificationService);
+console.log('🔧 [HOME] notificationService has initialize:', notificationService && typeof notificationService.initialize === 'function');
+
 const { width, height } = Dimensions.get('window');
 
 interface ServiceItemProps {
@@ -453,6 +458,31 @@ const User4: React.FC = () => {
       console.log('❌ Notification permission denied!');
     }
     return success;
+  };
+
+  const setupNotifications = async () => {
+    try {
+      console.log('🔧 [HOME] Setting up notifications...');
+      
+      if (!notificationService) {
+        console.log('⚠️ [HOME] notificationService is undefined, skipping setup');
+        return;
+      }
+      
+      if (typeof notificationService.initialize !== 'function') {
+        console.log('⚠️ [HOME] notificationService.initialize is not a function, skipping setup');
+        return;
+      }
+      
+      const success = await notificationService.initialize();
+      if (success) {
+        console.log('✅ [HOME] Notifications setup successful');
+      } else {
+        console.log('⚠️ [HOME] Notifications setup failed');
+      }
+    } catch (error) {
+      console.log('❌ [HOME] Error setting up notifications:', error);
+    }
   };
 
   return (
