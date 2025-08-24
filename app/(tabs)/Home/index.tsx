@@ -447,10 +447,10 @@ const User4: React.FC = () => {
     const success = await notificationService.initialize();
     if (success) {
       console.log('✅ Permission granted!');
-      alert('Notification permission granted!');
+      console.log('✅ Notification permission granted!');
     } else {
       console.log('❌ Permission denied!');
-      alert('Notification permission denied!');
+      console.log('❌ Notification permission denied!');
     }
     return success;
   };

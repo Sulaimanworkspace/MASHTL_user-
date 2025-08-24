@@ -15,52 +15,76 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotificationsAsync() {
   let token;
 
-  if (Platform.OS === 'ios') {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+  try {
+    if (Platform.OS === 'ios') {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.log('❌ [NOTIFICATIONS] Failed to get push token for push notification!');
+        return null;
+      }
+      
+      try {
+        // Get the token that uniquely identifies this device
+        token = (await Notifications.getExpoPushTokenAsync({
+          projectId: '298f9159-3f1c-4cdb-97a8-8fc32fe63138', // Your EAS project ID
+        })).data;
+        
+        console.log('✅ [NOTIFICATIONS] Expo push token:', token);
+      } catch (tokenError) {
+        // Handle APNs entitlement error gracefully
+        if (tokenError && typeof tokenError === 'object' && 'message' in tokenError && 
+            typeof tokenError.message === 'string' && tokenError.message.includes('aps-environment')) {
+          console.log('⚠️ [NOTIFICATIONS] APNs not configured - using local notifications only');
+          return null;
+        }
+        throw tokenError;
+      }
+    } else {
+      console.log('📱 [NOTIFICATIONS] Must use physical device for Push Notifications');
     }
-    
-    if (finalStatus !== 'granted') {
-      console.log('❌ [NOTIFICATIONS] Failed to get push token for push notification!');
-      return;
+
+    if (Platform.OS === 'ios') {
+      try {
+        Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      } catch (channelError) {
+        console.log('⚠️ [NOTIFICATIONS] Could not set notification channel:', channelError);
+      }
     }
-    
-    // Get the token that uniquely identifies this device
-    token = (await Notifications.getExpoPushTokenAsync({
-      projectId: '298f9159-3f1c-4cdb-97a8-8fc32fe63138', // Your EAS project ID
-    })).data;
-    
-    console.log('✅ [NOTIFICATIONS] Expo push token:', token);
-  } else {
-    console.log('📱 [NOTIFICATIONS] Must use physical device for Push Notifications');
-  }
 
-  if (Platform.OS === 'ios') {
-    Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
+    return token;
+  } catch (error) {
+    console.log('⚠️ [NOTIFICATIONS] Error getting push token:', error);
+    return null;
   }
-
-  return token;
 }
 
 export async function schedulePushNotification(title: string, body: string) {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-    },
-    trigger: { 
-      seconds: 2 
-    },
-  });
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+      },
+      trigger: { 
+        seconds: 2 
+      } as any,
+    });
+    console.log('✅ [NOTIFICATIONS] Local notification scheduled');
+  } catch (error) {
+    console.log('⚠️ [NOTIFICATIONS] Error scheduling notification:', error);
+  }
 }
 
 // Notification Service Class
@@ -86,11 +110,11 @@ class NotificationService {
         console.log('✅ [NOTIFICATIONS] Notification service initialized successfully');
         return true;
       } else {
-        console.log('⚠️ [NOTIFICATIONS] No push token received');
-        return false;
+        console.log('⚠️ [NOTIFICATIONS] No push token received - using local notifications only');
+        return true; // Return true to indicate service is available for local notifications
       }
     } catch (error) {
-      console.error('❌ [NOTIFICATIONS] Error initializing notification service:', error);
+      console.log('⚠️ [NOTIFICATIONS] Error initializing notification service:', error);
       return false;
     }
   }
@@ -104,7 +128,7 @@ class NotificationService {
       const pushToken = await registerForPushNotificationsAsync();
       
       if (!pushToken) {
-        console.log('⚠️ [NOTIFICATIONS] No push token available to save');
+        console.log('⚠️ [NOTIFICATIONS] No push token available - skipping server registration');
         return;
       }
 
@@ -142,7 +166,7 @@ class NotificationService {
         console.log('⚠️ [NOTIFICATIONS] Server response not successful');
       }
     } catch (error) {
-      console.error('❌ [NOTIFICATIONS] Error saving JWT token to server:', error);
+      console.log('⚠️ [NOTIFICATIONS] Error saving JWT token to server:', error);
       // Don't throw error to prevent app crash
     }
   }
@@ -164,7 +188,7 @@ class NotificationService {
       });
       console.log('✅ [NOTIFICATIONS] Local notification sent successfully');
     } catch (error) {
-      console.error('❌ [NOTIFICATIONS] Error sending local notification:', error);
+      console.log('⚠️ [NOTIFICATIONS] Error sending local notification:', error);
     }
   }
 
@@ -174,7 +198,7 @@ class NotificationService {
       const { status } = await Notifications.requestPermissionsAsync();
       return status === 'granted';
     } catch (error) {
-      console.error('❌ [NOTIFICATIONS] Error requesting permission:', error);
+      console.log('⚠️ [NOTIFICATIONS] Error requesting permission:', error);
       return false;
     }
   }
@@ -185,7 +209,7 @@ class NotificationService {
       console.log('🔔 [NOTIFICATIONS] Adding notification response listener...');
       return Notifications.addNotificationResponseReceivedListener(callback);
     } catch (error) {
-      console.error('❌ [NOTIFICATIONS] Error adding notification response listener:', error);
+      console.log('⚠️ [NOTIFICATIONS] Error adding notification response listener:', error);
       return null;
     }
   }
@@ -197,7 +221,7 @@ class NotificationService {
       await this.saveJWTTokenToServer();
       console.log('✅ [NOTIFICATIONS] JWT saving test completed');
     } catch (error) {
-      console.error('❌ [NOTIFICATIONS] JWT saving test failed:', error);
+      console.log('⚠️ [NOTIFICATIONS] JWT saving test failed:', error);
     }
   }
 }
