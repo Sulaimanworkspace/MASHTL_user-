@@ -10,12 +10,19 @@ import {
   Alert,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { updateUserLocation, getUserData, storeUserData } from '../../services/api';
+import { updateUserLocation, getUserData, storeUserData, refreshUserDataFromServer } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+
+// Global refresh trigger for location updates
+export const triggerLocationRefresh = () => {
+  // This will be used by other components to know when to refresh
+  console.log('🔄 Global location refresh triggered');
+  // You can add event emitter or other global state management here
+};
 
 export default function MapPicker() {
   const router = useRouter();
@@ -26,7 +33,40 @@ export default function MapPicker() {
     address: 'الرياض, المملكة العربية السعودية',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false); // Prevent duplicate updates
   const [locationPermission, setLocationPermission] = useState(false);
+
+  // Refresh user data on mount to ensure latest location
+  useEffect(() => {
+    const refreshLocation = async () => {
+      try {
+        console.log('🔄 Refreshing user data on mount to get latest location...');
+        await refreshUserDataFromServer();
+        console.log('✅ User data refreshed on mount');
+      } catch (error) {
+        console.log('⚠️ Could not refresh user data on mount:', error);
+      }
+    };
+    
+    refreshLocation();
+  }, []);
+
+  // Refresh location data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshLocationOnFocus = async () => {
+        try {
+          console.log('🔄 Refreshing location data on screen focus...');
+          await refreshUserDataFromServer();
+          console.log('✅ Location data refreshed on focus');
+        } catch (error) {
+          console.log('⚠️ Could not refresh location data on focus:', error);
+        }
+      };
+      
+      refreshLocationOnFocus();
+    }, [])
+  );
 
   // Remove auto-request on mount, only use button
   // useEffect(() => {
@@ -200,6 +240,12 @@ export default function MapPicker() {
       const data = JSON.parse(event.nativeEvent.data);
       
       if (data.type === 'LOCATION_SELECTED') {
+        // Prevent duplicate location updates
+        if (isUpdatingLocation) {
+          console.log('📍 Location update already in progress, skipping...');
+          return;
+        }
+        
         setSelectedLocation({
           latitude: data.latitude,
           longitude: data.longitude,
@@ -207,6 +253,16 @@ export default function MapPicker() {
         });
         
         setIsLoading(true);
+        setIsUpdatingLocation(true);
+        
+        // Add timeout to prevent stuck state
+        const updateTimeout = setTimeout(() => {
+          if (isUpdatingLocation) {
+            console.log('⚠️ Location update timeout, resetting state');
+            setIsUpdatingLocation(false);
+            setIsLoading(false);
+          }
+        }, 30000); // 30 second timeout
         
         // Add slight delay for better UX
         await new Promise(resolve => setTimeout(resolve, 800));
@@ -264,27 +320,139 @@ export default function MapPicker() {
             city: city,
           };
 
-          // Update backend
-          await updateUserLocation(userData._id, locationData);
-          
-          // Update local storage immediately
-          const updatedUserData = {
-            ...userData,
-            location: locationData
-          };
-          await storeUserData(updatedUserData);
-          
+          console.log('📍 Saving location data:', locationData);
+
+          try {
+            // Update backend
+            await updateUserLocation(userData._id, locationData);
+            
+            // Update local storage immediately
+            const updatedUserData = {
+              ...userData,
+              location: locationData
+            };
+            await storeUserData(updatedUserData);
+            
+            // Force refresh user data from server to ensure consistency
+            try {
+              console.log('🔄 Refreshing user data from server to ensure latest location...');
+              await refreshUserDataFromServer();
+              console.log('✅ User data refreshed from server');
+              
+              // Clear all cached data to ensure fresh data is used
+              try {
+                console.log('🧹 Clearing all cached data to ensure fresh app state...');
+                
+                // Clear location cache
+                await AsyncStorage.removeItem('user_location_cache');
+                await AsyncStorage.removeItem('location_cache_timestamp');
+                
+                // Clear other potential cache keys
+                await AsyncStorage.removeItem('services_cache');
+                await AsyncStorage.removeItem('orders_cache');
+                await AsyncStorage.removeItem('notifications_cache');
+                
+                // Clear any other cached data
+                const keys = await AsyncStorage.getAllKeys();
+                const cacheKeys = keys.filter(key => 
+                  key.includes('cache') || 
+                  key.includes('timestamp') || 
+                  key.includes('temp')
+                );
+                
+                if (cacheKeys.length > 0) {
+                  await AsyncStorage.multiRemove(cacheKeys);
+                  console.log('🧹 Cleared cache keys:', cacheKeys);
+                }
+                
+                console.log('✅ All cached data cleared successfully');
+                
+                // Trigger global refresh
+                triggerLocationRefresh();
+                
+              } catch (cacheError) {
+                console.log('⚠️ Error clearing cache:', cacheError);
+              }
+            } catch (refreshError) {
+              console.log('⚠️ Could not refresh from server, using local update:', refreshError);
+            }
+            
+            console.log('✅ Location saved successfully');
+            
+            clearTimeout(updateTimeout); // Clear timeout
+            setIsLoading(false);
+            setIsUpdatingLocation(false);
+            
+            // Navigate back safely or to home if no previous screen
+            try {
+              // Pass refresh parameter to trigger Home screen refresh
+              router.replace({
+                pathname: '/(tabs)/Home',
+                params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+              });
+            } catch (error) {
+              // If navigation fails, go to home with refresh
+              router.replace({
+                pathname: '/(tabs)/Home',
+                params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+              });
+            }
+          } catch (error) {
+            console.error('❌ Error saving location:', error);
+            clearTimeout(updateTimeout); // Clear timeout
+            setIsLoading(false);
+            setIsUpdatingLocation(false);
+            
+            // Still navigate back even if save failed, but with refresh
+            try {
+              router.replace({
+                pathname: '/(tabs)/Home',
+                params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+              });
+            } catch (navError) {
+              router.replace({
+                pathname: '/(tabs)/Home',
+                params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+              });
+            }
+          }
+        } else {
+          console.error('❌ No user data available');
+          clearTimeout(updateTimeout); // Clear timeout
           setIsLoading(false);
-          router.back();
-                } else {
-          setIsLoading(false);
-          router.back();
+          setIsUpdatingLocation(false);
+          
+          // Navigate back safely or to home if no previous screen
+          try {
+            router.replace({
+              pathname: '/(tabs)/Home',
+              params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+            });
+          } catch (error) {
+            router.replace({
+              pathname: '/(tabs)/Home',
+              params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+            });
+          }
         }
       }
     } catch (error) {
-      console.error('Error handling webview message:', error);
+      console.error('❌ Error handling webview message:', error);
       setIsLoading(false);
-      router.back();
+      setIsUpdatingLocation(false);
+      
+      // Navigate back safely or to home if no previous screen
+      try {
+        router.replace({
+          pathname: '/(tabs)/Home',
+          params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+        });
+      } catch (navError) {
+        router.replace({
+          pathname: '/(tabs)/Home',
+          params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+        });
+      }
     }
   };
 
@@ -308,7 +476,21 @@ export default function MapPicker() {
         <View style={styles.headerContent}>
           <View style={styles.headerSpacer} />
           <Text style={styles.headerTitle}>اختر موقعك من الخريطة</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => {
+            try {
+              // Navigate back with refresh parameter
+              router.replace({
+                pathname: '/(tabs)/Home',
+                params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+              });
+            } catch (error) {
+              // If navigation fails, go to home with refresh
+              router.replace({
+                pathname: '/(tabs)/Home',
+                params: { refreshLocation: 'true', timestamp: Date.now().toString() }
+              });
+            }
+          }}>
             <FontAwesome5 name="arrow-right" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>

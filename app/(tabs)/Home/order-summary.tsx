@@ -4,7 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, Alert } from 'react-native';
 import Colors from '../../_colors';
-import { getUserData, getServices } from '../../services/api';
+import { getUserData, getServices, refreshUserDataFromServer } from '../../services/api';
 import LocationPickerModal from '../../components/LocationPickerModal';
 
 export default function OrderSummaryScreen() {
@@ -67,6 +67,7 @@ export default function OrderSummaryScreen() {
 
   const loadUserLocation = async () => {
     try {
+      await refreshUserDataFromServer(); // Ensure latest user data is fetched
       const userData = await getUserData();
       if (userData && userData.location && userData.location.address) {
         setUserLocation({

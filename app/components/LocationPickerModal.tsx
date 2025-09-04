@@ -17,7 +17,7 @@ import * as Location from 'expo-location';
 import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import Colors from '../_colors';
-import { getUserData, updateUserLocation, storeUserData } from '../services/api';
+import { getUserData, updateUserLocation, storeUserData, refreshUserDataFromServer } from '../services/api';
 import { ensureFreshUserData } from '../utils/userDataManager';
 
 const { width, height } = Dimensions.get('window');
@@ -53,6 +53,7 @@ export default function LocationPickerModal({
 
   const loadSavedLocation = async () => {
     try {
+      await refreshUserDataFromServer(); // Ensure latest user data
       const userData = await getUserData();
       console.log('🔍 LocationPickerModal - Loading user data:', userData);
       

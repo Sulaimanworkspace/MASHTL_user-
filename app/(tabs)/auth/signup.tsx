@@ -24,17 +24,10 @@ export default function SignupScreen() {
   const otpRefs = useRef<(TextInput | null)[]>([]);
   const phoneValidationTimeout = useRef<any>(null);
 
-  // Clear form when screen is focused (when user enters the page)
+  // Only clear OTP-related state when screen is focused, keep form data
   useFocusEffect(
     useCallback(() => {
-      setName('');
-      setPhone('');
-      setPassword('');
-      setConfirmPassword('');
-      setShowPassword(false);
-      setShowConfirmPassword(false);
-      setErrors({});
-      setLoading(false);
+      // Don't clear form data - user might be returning to complete signup
       setShowOTPModal(false);
       setOtp(['', '', '', '', '', '']);
       setOtpLoading(false);

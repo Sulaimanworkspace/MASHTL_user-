@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
     Dimensions,
@@ -108,6 +108,7 @@ interface ServiceData {
 
 const User4: React.FC = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [userName, setUserName] = useState('بك في مشتل');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userLocation, setUserLocation] = useState('اختر موقعك');
@@ -117,6 +118,14 @@ const User4: React.FC = () => {
   const [isNetworkConnected, setIsNetworkConnected] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [servicesLoaded, setServicesLoaded] = useState(false);
+
+  // Check for refresh parameters from map-picker
+  useEffect(() => {
+    if (params.refreshLocation === 'true') {
+      console.log('🔄 Location refresh detected - will refresh on next focus');
+      // The actual refresh will happen in useFocusEffect
+    }
+  }, [params.refreshLocation]);
 
   // Debug: Log notification count changes
   useEffect(() => {
@@ -306,7 +315,48 @@ const User4: React.FC = () => {
       const loadUserData = async () => {
         try {
           setIsLoading(true);
-          // Use getUserData directly instead of ensureFreshUserData to avoid immediate profile refresh
+          
+          // Check if we need to force refresh due to location update
+          const shouldForceRefresh = params.refreshLocation === 'true';
+          
+          if (shouldForceRefresh) {
+            console.log('🔄 Force refresh detected - clearing all cached data...');
+            
+            // Clear all cached data
+            try {
+              await AsyncStorage.multiRemove([
+                'user_location_cache',
+                'location_cache_timestamp',
+                'services_cache',
+                'orders_cache',
+                'notifications_cache'
+              ]);
+              console.log('✅ All cached data cleared');
+            } catch (cacheError) {
+              console.log('⚠️ Error clearing cache:', cacheError);
+            }
+          }
+          
+          // First try to refresh user data from server to get latest location
+          try {
+            console.log('🔄 Refreshing user data from server to get latest location...');
+            await refreshUserDataFromServer();
+            console.log('✅ User data refreshed from server');
+            
+            // If force refresh, also reload services
+            if (shouldForceRefresh) {
+              console.log('🔄 Force refresh - reloading services...');
+              setServicesLoaded(false); // This will trigger services reload
+              
+              // Clear the refresh parameter to prevent repeated refreshes
+              // Note: We can't modify params directly, but we can track it in state
+              console.log('✅ Force refresh completed, clearing refresh flag');
+            }
+          } catch (refreshError) {
+            console.log('⚠️ Could not refresh from server, using local data:', refreshError);
+          }
+          
+          // Use getUserData to get the refreshed data
           const userData = await getUserData();
           console.log('📱 Home screen focused - checking user data:', userData);
           

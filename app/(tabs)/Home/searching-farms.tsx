@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { createServiceOrder, getUserData, cancelServiceOrder, getUserNotifications, markNotificationAsRead } from '../../services/api';
+import { createServiceOrder, getUserData, cancelServiceOrder, getUserNotifications, markNotificationAsRead, refreshUserDataFromServer } from '../../services/api';
 import io from 'socket.io-client';
 
 export default function SearchingFarmsScreen() {
@@ -35,6 +35,15 @@ export default function SearchingFarmsScreen() {
   // Check for new notifications - ONLY for current order
   const checkNotifications = async () => {
     try {
+      // First refresh user data from server to get latest location
+      try {
+        console.log('🔄 Refreshing user data from server to get latest location...');
+        await refreshUserDataFromServer();
+        console.log('✅ User data refreshed from server');
+      } catch (refreshError) {
+        console.log('⚠️ Could not refresh from server, using local data:', refreshError);
+      }
+      
       const userData = await getUserData();
       if (!userData || !userData._id) return;
 
@@ -118,6 +127,15 @@ export default function SearchingFarmsScreen() {
       
       const createOrder = async () => {
         try {
+          // First refresh user data from server to get latest location
+          try {
+            console.log('🔄 Refreshing user data from server to get latest location...');
+            await refreshUserDataFromServer();
+            console.log('✅ User data refreshed from server');
+          } catch (refreshError) {
+            console.log('⚠️ Could not refresh from server, using local data:', refreshError);
+          }
+          
           const userData = await getUserData();
           if (!userData) {
             console.error('❌ No user data found');

@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert } from 'react-native';
-import { createProjectRequest, getUserData } from '../../services/api';
+import { createProjectRequest, getUserData, refreshUserDataFromServer } from '../../services/api';
 
 export default function ProjectFormScreen() {
   const router = useRouter();
@@ -82,6 +82,7 @@ export default function ProjectFormScreen() {
     
     try {
       // Get user data to include location
+      await refreshUserDataFromServer();
       const userData = await getUserData();
       let userLocation = null;
       

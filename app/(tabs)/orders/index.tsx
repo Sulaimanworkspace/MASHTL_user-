@@ -327,7 +327,7 @@ const User17: React.FC = () => {
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>طلباتى</Text>
+                            <Text style={styles.title}>طلباتي</Text>
           </View>
         </View>
       </View>
@@ -372,19 +372,19 @@ const User17: React.FC = () => {
                   hasFarmer: !!order.farmer,
                   isAccepted: order.status === 'accepted',
                   isCompleted: order.status === 'completed',
-                  shouldOpenModal: order.status === 'accepted' || order.status === 'completed'
+                  shouldOpenModal: order.status === 'accepted' || order.status === 'in_progress' || order.status === 'working'
                 });
                 
-                if (order.status === 'accepted' || order.status === 'completed') {
+                if (order.status === 'accepted' || order.status === 'in_progress' || order.status === 'working') {
                   console.log('🔍 Setting selected order and showing modal');
                   setSelectedOrder(order);
                   setShowContactModal(true);
                   console.log('🔍 Modal state should now be true');
                 } else {
-                  console.log('🔍 Order status is not accepted/completed, not showing modal');
+                  console.log('🔍 Order status is not accepted/work started/currently working, not showing modal');
                 }
               }}
-              activeOpacity={order.status === 'accepted' || order.status === 'completed' ? 0.7 : 1}
+              activeOpacity={order.status === 'accepted' || order.status === 'in_progress' || order.status === 'working' ? 0.7 : 1}
             >
               <View style={styles.orderContent}>
                 <View style={styles.orderMainInfo}>
