@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "مشتل",
+    "slug": "mashtl",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "userapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#2E8B57",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة"
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyAymUZ38EmOE01tkStI0Rtm0YeYOIU5kYw"
+      },
+      "bundleIdentifier": "com.mashtlapp.user",
+      "appleTeamId": "GQ245B6F47"
+    },
+    "android": {
+      "icon": "./assets/images/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDemoKeyForDevelopment123456789"
+        }
+      },
+      "package": "com.anonymous.mashtl"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "tsconfigPaths": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "298f9159-3f1c-4cdb-97a8-8fc32fe63138"
+      }
+    }
+  }
+}
