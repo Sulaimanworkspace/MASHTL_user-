@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "مشتل",
+    "slug": "mashtl",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "userapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#2E8B57",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة",
+        "NSContactsUsageDescription": "نحتاج إذن الوصول للاتصالات لإرسال رموز التحقق عبر الرسائل النصية",
+        "NSPhoneNumberUsageDescription": "نحتاج إذن الوصول لرقم الهاتف للتحقق من هويتك",
+        "UIBackgroundModes": ["remote-notification"],
+        "CFBundleDisplayName": "مشتل"
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyAymUZ38EmOE01tkStI0Rtm0YeYOIU5kYw"
+      },
+      "bundleIdentifier": "com.mashtlapp.user",
+      "appleTeamId": "GQ245B6F47",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "aps-environment": "development"
+      }
+    },
+    "android": {
+      "icon": "./assets/images/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "minSdkVersion": 26,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "SEND_SMS",
+        "RECEIVE_SMS",
+        "READ_SMS",
+        "READ_PHONE_STATE"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDemoKeyForDevelopment123456789"
+        }
+      },
+      "package": "com.mashtlapp.user",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#2E8B57"
+        }
+      ],
+      "expo-router",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "tsconfigPaths": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "298f9159-3f1c-4cdb-97a8-8fc32fe63138"
+      }
+    }
+  }
+}

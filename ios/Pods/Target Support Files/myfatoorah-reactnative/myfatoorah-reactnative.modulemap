@@ -1,0 +1,6 @@
+module myfatoorah_reactnative {
+  umbrella header "myfatoorah-reactnative-umbrella.h"
+
+  export *
+  module * { export * }
+}

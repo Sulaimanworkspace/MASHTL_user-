@@ -1,0 +1,6 @@
+module Pods_mshtl {
+  umbrella header "Pods-mshtl-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "myfatoorah-reactnative",
+  "version": "1.3.0",
+  "summary": "MyFatoorah SDK v2 , is an enhanced and improved SDK version that will simplify the integration with MyFatoorah payment platform through simple straight forward steps.",
+  "homepage": "https://www.myfatoorah.com",
+  "license": "MIT",
+  "authors": "myfatoorah",
+  "platforms": {
+    "ios": "11.0"
+  },
+  "source": {
+    "git": "https://myfatoorahsc@dev.azure.com/myfatoorahsc/MF-SDK-React-Native/_git/MF-SDK-React-Native.git",
+    "tag": "1.3.0"
+  },
+  "source_files": "ios/**/*.{h,m,mm,swift}",
+  "dependencies": {
+    "React": [],
+    "React-Core": [],
+    "MyFatoorah": [
+      "~> 2.0.155"
+    ]
+  }
+}
