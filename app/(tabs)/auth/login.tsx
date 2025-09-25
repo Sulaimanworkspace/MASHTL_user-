@@ -1,11 +1,11 @@
-import { useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useRef, useCallback } from 'react';
-import { Image, Keyboard, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Modal } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { login, sendOTP, verifyOTP, storeUserData, refreshUserDataFromServer } from '../../services/api';
-import webSocketService from '../../services/websocket';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useRef, useState } from 'react';
+import { Image, Keyboard, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { login, storeUserData } from '../../services/api';
 import notificationService from '../../services/notifications';
+import webSocketService from '../../services/websocket';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -126,15 +126,22 @@ export default function LoginScreen() {
         'Content-Type': 'application/x-www-form-urlencoded',
         // 'X-Forwarded-For': '178.128.194.234', // Production server IP - commented for local dev
         // 'X-Real-IP': '178.128.194.234', // Production server IP - commented for local dev
-        'User-Agent': 'Mashtal-Development-Server/1.0' // Changed from Production to Development
+        'User-Agent': 'Mashtal-Development-Server/1.1.1' // Changed from Production to Development
       };
       
       console.log('🔗 URL:', `${apiUrl}?${params.toString()}`);
       
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch(`${apiUrl}?${params.toString()}`, {
         method: 'POST',
         headers: headers,
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       
       const result = await response.text();
       
@@ -195,7 +202,11 @@ export default function LoginScreen() {
       // Get OTP from server and save to database
       console.log('💾 Getting OTP from server and saving to database...');
       // const saveResponse = await fetch('http://178.128.194.234:8080/api/auth/send-otp', { // Production URL
-      const saveResponse = await fetch('http://localhost:8080/api/auth/send-otp', { // Local development URL
+      // Create AbortController for timeout
+      const saveController = new AbortController();
+      const saveTimeoutId = setTimeout(() => saveController.abort(), 30000); // 30 second timeout
+      
+      const saveResponse = await fetch('http://178.128.194.234:8080/api/auth/send-otp', { // Production server URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,8 +214,11 @@ export default function LoginScreen() {
         body: JSON.stringify({
           phone: fullPhone,
           type: 'login'
-        })
+        }),
+        signal: saveController.signal,
       });
+      
+      clearTimeout(saveTimeoutId);
       
       const saveResult = await saveResponse.json();
       console.log('💾 Database save result:', saveResult);
@@ -276,7 +290,11 @@ export default function LoginScreen() {
       
       // Verify OTP via server (which checks database)
       // const verifyResponse = await fetch('http://178.128.194.234:8080/api/auth/verify-otp', { // Production URL
-      const verifyResponse = await fetch('http://localhost:8080/api/auth/verify-otp', { // Local development URL
+      // Create AbortController for timeout
+      const verifyController = new AbortController();
+      const verifyTimeoutId = setTimeout(() => verifyController.abort(), 30000); // 30 second timeout
+      
+      const verifyResponse = await fetch('http://178.128.194.234:8080/api/auth/verify-otp', { // Production server URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -284,8 +302,11 @@ export default function LoginScreen() {
         body: JSON.stringify({
           phone: fullPhone,
           otp: otpCode
-        })
+        }),
+        signal: verifyController.signal,
       });
+      
+      clearTimeout(verifyTimeoutId);
       const verifyResult = await verifyResponse.json();
       console.log('🔍 Server verification result:', verifyResult);
       

@@ -1,33 +1,76 @@
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { dreamsSmsService, otpMessageTemplate } from '../../config/dreamsSms';
 
 // List of possible API URLs to try
 const POSSIBLE_URLS = [
-  'http://localhost:8080/api',       // Local development (port 8080)
-  'http://127.0.0.1:8080/api',       // Local development alternative
-  'http://10.0.2.2:8080/api',        // Android Emulator
-  'http://192.168.1.100:8080/api',   // Common local network IP
-  'http://192.168.0.100:8080/api',   // Alternative local network IP
-  'http://178.128.194.234:8080/api', // Production server (port 8080)
+     'http://178.128.194.234:8080/api',
+     'http://mashtl.com:8080/api',
+  // 'http://localhost:8080/api',       // Local development (port 8080)
+  // 'http://127.0.0.1:8080/api',       // Local development alternative
+  // 'http://10.0.2.2:8080/api',        // Android Emulator
+  // 'http://192.168.1.100:8080/api',   // Common local network IP
+  // 'http://192.168.0.100:8080/api',   // Alternative local network IP
 ];
 
-let API_BASE_URL = POSSIBLE_URLS[0]; // Start with local development
+let API_BASE_URL = POSSIBLE_URLS[0]; // Start with production server
 
 // Function to test which URL works
 const testAPIConnection = async () => {
   console.log('🔍 Testing API connections...');
+  console.log('🌍 User location:', navigator.language || 'Unknown');
+  console.log('📱 Device type:', navigator.userAgent.includes('iPad') ? 'iPad' : 'iPhone');
+  console.log('🌐 Network info:', navigator.onLine ? 'Online' : 'Offline');
+  console.log('📱 User Agent:', navigator.userAgent);
+  
   for (const url of POSSIBLE_URLS) {
     try {
       console.log(`Testing API URL: ${url}`);
       // Test the root endpoint by removing /api and adding /
       const testUrl = url.replace('/api', '') + '/';
-      const response = await axios.get(testUrl, { timeout: 3000 });
+      const response = await axios.get(testUrl, { 
+        timeout: 30000, // Extended timeout for international connections (30 seconds)
+        headers: {
+          'User-Agent': 'MASHTL-Mobile-App/1.1.1',
+          'Accept': 'application/json',
+          'Connection': 'keep-alive'
+        }
+      });
       console.log(`✅ Found working API URL: ${url}`);
+      console.log(`📊 Response status: ${response.status}`);
       API_BASE_URL = url;
       return url;
-    } catch (error) {
+    } catch (error: any) {
       console.log(`❌ Failed to connect to: ${url}`);
+      console.log(`🔍 Error details:`, {
+        code: error.code,
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      
+      // Log specific error types for debugging
+      if (error.code === 'ECONNREFUSED') {
+        console.log('   → Connection refused (server may be down or port blocked)');
+      } else if (error.code === 'ETIMEDOUT') {
+        console.log('   → Connection timeout (network issues or firewall)');
+      } else if (error.code === 'ENOTFOUND') {
+        console.log('   → DNS resolution failed (IP not accessible)');
+      } else if (error.code === 'ECONNABORTED') {
+        console.log('   → Connection aborted (network interruption)');
+      } else if (error.response?.status === 403) {
+        console.log('   → Forbidden (server blocking this region)');
+      } else if (error.response?.status === 404) {
+        console.log('   → Not found (endpoint not available)');
+      }
+      
+      // iPad-specific debugging
+      if (navigator.userAgent.includes('iPad')) {
+        console.log('   → iPad detected - checking for iPad-specific issues...');
+        console.log('   → iPad User Agent:', navigator.userAgent);
+        console.log('   → iPad Network Status:', navigator.onLine);
+        console.log('   → iPad Connection Type:', navigator.connection?.effectiveType || 'Unknown');
+      }
     }
   }
   console.error('⚠️ No working API URL found. Using default:', POSSIBLE_URLS[0]);
@@ -50,12 +93,55 @@ export const testConnection = async () => {
   }
 };
 
+// iPad-specific connection test
+export const testIPadConnection = async () => {
+  if (!navigator.userAgent.includes('iPad')) {
+    console.log('📱 Not an iPad device, skipping iPad-specific test');
+    return null;
+  }
+  
+  console.log('📱 iPad Air 13" detected - running iPad-specific connection test...');
+  console.log('📱 iPad User Agent:', navigator.userAgent);
+  console.log('📱 iPad Network Status:', navigator.onLine);
+  console.log('📱 iPad Connection Type:', navigator.connection?.effectiveType || 'Unknown');
+  
+  // Test with iPad-specific headers
+  for (const url of POSSIBLE_URLS) {
+    try {
+      console.log(`📱 Testing iPad connection to: ${url}`);
+      const testUrl = url.replace('/api', '') + '/';
+      const response = await axios.get(testUrl, { 
+        timeout: 30000,
+        headers: {
+          'User-Agent': 'MASHTL-Mobile-App/1.1.1 (iPad; iOS 17.0; iPad Air 13")',
+          'Accept': 'application/json',
+          'Connection': 'keep-alive',
+          'X-Device-Type': 'iPad',
+          'X-Device-Model': 'iPad Air 13"'
+        }
+      });
+      console.log(`✅ iPad connection successful to: ${url}`);
+      return url;
+    } catch (error: any) {
+      console.log(`❌ iPad connection failed to: ${url}`);
+      console.log(`📱 iPad Error details:`, {
+        code: error.code,
+        message: error.message,
+        status: error.response?.status
+      });
+    }
+  }
+  
+  console.error('⚠️ No working connection found for iPad Air 13"');
+  return null;
+};
+
 const api = axios.create({
   get baseURL() { 
     console.log('🌐 Using API URL:', API_BASE_URL);
     return API_BASE_URL; 
   },
-  timeout: 10000, // Reduced timeout for faster failure detection
+  timeout: 30000, // Extended timeout for international connections (30 seconds)
   headers: {
     'Content-Type': 'application/json',
   },

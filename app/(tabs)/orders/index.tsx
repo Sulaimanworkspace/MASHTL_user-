@@ -77,7 +77,7 @@ const User17: React.FC = () => {
 
   // Initialize Socket.IO for real-time updates
   useEffect(() => {
-    const socket = io('http://172.20.10.12:9090');
+    const socket = io('http://178.128.194.234:8080');
     
     socket.on('connect', () => {
       console.log('Connected to socket server');

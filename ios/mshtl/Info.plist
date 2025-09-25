@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>1.1.1</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -39,7 +39,9 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>1.1.1</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
     <key>GMSApiKey</key>
     <string>AIzaSyAymUZ38EmOE01tkStI0Rtm0YeYOIU5kYw</string>
     <key>LSMinimumSystemVersion</key>
@@ -49,8 +51,12 @@
     <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>
-      <false/>
+      <true/>
       <key>NSAllowsLocalNetworking</key>
+      <true/>
+      <key>NSAllowsArbitraryLoadsInWebContent</key>
+      <true/>
+      <key>NSAllowsArbitraryLoadsForMedia</key>
       <true/>
       <key>NSExceptionDomains</key>
       <dict>
@@ -62,6 +68,72 @@
           <string>TLSv1.0</string>
           <key>NSIncludesSubdomains</key>
           <true/>
+          <key>NSExceptionRequiresForwardSecrecy</key>
+          <false/>
+          <key>NSExceptionAllowsArbitraryLoads</key>
+          <true/>
+          <key>NSExceptionAllowsInsecureHTTPSLoads</key>
+          <true/>
+          <key>NSExceptionAllowInsecureHTTPLoads</key>
+          <true/>
+        </dict>
+        <key>178.128.194.2</key>
+        <dict>
+          <key>NSExceptionAllowsInsecureHTTPLoads</key>
+          <true/>
+          <key>NSExceptionMinimumTLSVersion</key>
+          <string>TLSv1.0</string>
+          <key>NSIncludesSubdomains</key>
+          <true/>
+          <key>NSExceptionRequiresForwardSecrecy</key>
+          <false/>
+          <key>NSExceptionAllowsArbitraryLoads</key>
+          <true/>
+          <key>NSExceptionAllowsInsecureHTTPSLoads</key>
+          <true/>
+          <key>NSExceptionAllowInsecureHTTPLoads</key>
+          <true/>
+        </dict>
+        <key>mashtl.com</key>
+        <dict>
+          <key>NSExceptionAllowsInsecureHTTPLoads</key>
+          <true/>
+          <key>NSExceptionAllowsInsecureHTTPSLoads</key>
+          <true/>
+          <key>NSExceptionAllowsArbitraryLoads</key>
+          <true/>
+          <key>NSExceptionMinimumTLSVersion</key>
+          <string>TLSv1.0</string>
+          <key>NSExceptionRequiresForwardSecrecy</key>
+          <false/>
+          <key>NSIncludesSubdomains</key>
+          <true/>
+        </dict>
+        <key>178.128.194.234</key>
+        <dict>
+          <key>NSExceptionAllowsInsecureHTTPLoads</key>
+          <true/>
+          <key>NSExceptionAllowsArbitraryLoads</key>
+          <true/>
+          <key>NSExceptionAllowsInsecureHTTPSLoads</key>
+          <true/>
+          <key>NSExceptionMinimumTLSVersion</key>
+          <string>TLSv1.0</string>
+          <key>NSExceptionRequiresForwardSecrecy</key>
+          <false/>
+        </dict>
+        <key>178.128.194.234:8080</key>
+        <dict>
+          <key>NSExceptionAllowsInsecureHTTPLoads</key>
+          <true/>
+          <key>NSExceptionAllowsArbitraryLoads</key>
+          <true/>
+          <key>NSExceptionAllowsInsecureHTTPSLoads</key>
+          <true/>
+          <key>NSExceptionMinimumTLSVersion</key>
+          <string>TLSv1.0</string>
+          <key>NSExceptionRequiresForwardSecrecy</key>
+          <false/>
         </dict>
       </dict>
     </dict>
@@ -99,7 +171,5 @@
     <string>Automatic</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
-    <key>APIBaseURL</key>
-    <string>http://178.128.194.234:8080/api</string>
   </dict>
 </plist>

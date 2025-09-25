@@ -10,7 +10,7 @@ class WebSocketService {
   private currentUserId: string | null = null;
   private currentOrderId: string | null = null;
 
-  private socketUrl = 'http://localhost:8080'; // Fixed to match server port
+  private socketUrl = 'http://178.128.194.234:8080'; // Production server URL
 
   // Singleton pattern
   private static instance: WebSocketService;

@@ -41,3 +41,6 @@ export const useSpinner = (): SpinnerContextType => {
   }
   return context;
 };
+
+// Default export for React component
+export default SpinnerContext;
