@@ -1,12 +1,14 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert } from 'react-native';
 import { createProjectRequest, getUserData, refreshUserDataFromServer } from '../../services/api';
+import { useSpinner } from '../../contexts/SpinnerContext';
 
 export default function ProjectFormScreen() {
   const router = useRouter();
+  const { showSpinner, hideSpinner } = useSpinner();
   const { name, image, description } = useLocalSearchParams();
   const [form, setForm] = useState({
     projectName: '',
@@ -21,10 +23,16 @@ export default function ProjectFormScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalType, setModalType] = useState<'success' | 'error'>('success');
   const [modalMessage, setModalMessage] = useState('');
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Clear form data when screen is focused for security
+  // Clear form data when screen is focused for security and scroll to top
   useFocusEffect(
     useCallback(() => {
+      // Scroll to top when screen is focused
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+
       setForm({
         projectName: '',
         projectType: '',
@@ -79,6 +87,7 @@ export default function ProjectFormScreen() {
     if (!validateForm()) return;
     
     setIsSubmitting(true);
+    showSpinner('جاري إرسال الطلب...');
     
     try {
       // Get user data to include location
@@ -128,10 +137,12 @@ export default function ProjectFormScreen() {
       }
     } catch (error: any) {
       console.error('Error submitting project request:', error);
+      hideSpinner();
       setModalType('error');
       setModalMessage('حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.');
       setShowModal(true);
     } finally {
+      hideSpinner();
       setIsSubmitting(false);
     }
   };
@@ -156,10 +167,10 @@ export default function ProjectFormScreen() {
           </View>
         </View>
       </View>
-      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView ref={scrollViewRef} style={styles.content} contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <Image source={require('../../../assets/images/icon.jpg')} style={styles.logo} resizeMode="contain" />
+          <Image source={require('../../../assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
         </View>
         {/* Card Form */}
         <View style={styles.formCard}>

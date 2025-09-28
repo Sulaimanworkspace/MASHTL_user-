@@ -12,7 +12,8 @@ import {
   Modal,
 } from 'react-native';
 import { getUserData, clearUserData } from '../../services/api';
-import webSocketService from '../../services/websocket';
+import pusherService from '../../services/pusher';
+import { useSpinner } from '../../contexts/SpinnerContext';
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
@@ -68,6 +69,7 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
 
 const User19: React.FC = () => {
   const router = useRouter();
+  const { showSpinner, hideSpinner } = useSpinner();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -97,15 +99,18 @@ const User19: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      // Clear WebSocket connection first
-      await webSocketService.clearUserData();
+      showSpinner('جاري تسجيل الخروج...');
+      // Clear Pusher connection first
+      await pusherService.clearUserData();
       await clearUserData();
       setIsLoggedIn(false);
       setShowLogoutModal(false); // Close the modal
       console.log('✅ User logged out successfully');
+      hideSpinner();
       router.replace('/(tabs)/Home'); // Redirect to homepage instead of login
     } catch (error) {
       console.error('Error during logout:', error);
+      hideSpinner();
       setShowLogoutModal(false); // Close modal even if error occurs
     }
   };
@@ -148,7 +153,12 @@ const User19: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View 
+      style={styles.container}
+      onTouchStart={(e) => {
+        // Disable swipe gestures
+        e.stopPropagation();
+      }}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
 
       {/* Green Header Navigation Bar */}

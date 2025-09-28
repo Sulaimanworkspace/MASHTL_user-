@@ -15,8 +15,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { createComplaint, getUserComplaints } from '../../services/api';
-import { webSocketService } from '../../services/websocket';
-import notificationService, { sendNotificationFromWebSocket } from '../../services/notifications';
+import { pusherService } from '../../services/pusher';
+import notificationService, { sendNotificationFromPusher } from '../../services/notifications';
 
 // Debug notifications service import
 console.log('🔧 [COMPLAINTS] Importing notificationService:', notificationService);
@@ -85,24 +85,24 @@ const Complaints: React.FC = () => {
 
   useEffect(() => {
     loadComplaints();
-    setupWebSocket();
+    setupPusher();
     setupNotifications();
     
     return () => {
-      // Cleanup WebSocket listeners
-      webSocketService.off('complaint_status_updated');
-      webSocketService.off('new_complaint');
+      // Cleanup Pusher listeners
+      pusherService.off('complaint_status_updated');
+      pusherService.off('new_complaint');
     };
   }, []);
 
-  const setupWebSocket = async () => {
+  const setupPusher = async () => {
     try {
-      // Initialize WebSocket connection
-      await webSocketService.initialize();
+      // Initialize Pusher connection
+      await pusherService.initialize();
       
       // Listen for complaint status updates
-      webSocketService.on('complaint_status_updated', (data: any) => {
-        console.log('🔔 Complaint status updated via WebSocket:', data);
+      pusherService.on('complaint_status_updated', (data: any) => {
+        console.log('🔔 Complaint status updated via Pusher:', data);
         
         // Update the complaint in the list
         setComplaints(prevComplaints => 
@@ -115,7 +115,7 @@ const Complaints: React.FC = () => {
         
         // Send push notification
         const statusText = getStatusText(data.status);
-        sendNotificationFromWebSocket({
+        sendNotificationFromPusher({
           title: 'تحديث حالة الشكوى',
           body: `تم تحديث حالة شكواك إلى: ${statusText}`,
           data: { type: 'complaint_update', complaintId: data.complaintId }
@@ -123,13 +123,13 @@ const Complaints: React.FC = () => {
       });
       
       // Listen for new complaints (if user submits from another device)
-      webSocketService.on('new_complaint', (data: any) => {
-        console.log('🔔 New complaint received via WebSocket:', data);
+      pusherService.on('new_complaint', (data: any) => {
+        console.log('🔔 New complaint received via Pusher:', data);
         loadComplaints(); // Refresh the list
       });
       
     } catch (error) {
-      console.error('❌ Error setting up WebSocket:', error);
+      console.error('❌ Error setting up Pusher:', error);
     }
   };
 

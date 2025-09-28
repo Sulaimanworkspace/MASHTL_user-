@@ -67,6 +67,15 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
   };
 
   // Initialize MyFatoorah SDK
+  // Reset card view details on every login (component mount)
+  useEffect(() => {
+    console.log('🔄 Resetting card view details on login');
+    setCardViewReady(false);
+    setSessionResponse(null);
+    setSessionId(null);
+    setError(null);
+  }, []);
+
   useEffect(() => {
     const initializeMyFatoorah = async () => {
       try {
@@ -320,9 +329,17 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
     } catch (error: any) {
       console.error('❌ Payment error:', error);
       
-      // Handle specific validation errors
+      // Handle specific validation errors - removed alert popup
       if (error.message?.includes('validation') || error.message?.includes('invalid')) {
-        Alert.alert('خطأ في البيانات', 'يرجى التأكد من صحة بيانات البطاقة');
+        console.log('⚠️ Card validation error - resetting card view details');
+        // Reset card view details on validation error
+        setCardViewReady(false);
+        setSessionResponse(null);
+        setSessionId(null);
+        // Reinitialize the card view
+        setTimeout(() => {
+          initializeMyFatoorah();
+        }, 1000);
       } else {
         onError(error);
       }

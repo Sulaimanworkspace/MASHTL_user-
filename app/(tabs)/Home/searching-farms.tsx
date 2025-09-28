@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { createServiceOrder, getUserData, cancelServiceOrder, getUserNotifications, markNotificationAsRead, refreshUserDataFromServer } from '../../services/api';
-import io from 'socket.io-client';
+import pusherService from '../../services/pusher';
 import { useSpinner } from '../../contexts/SpinnerContext';
 
 export default function SearchingFarmsScreen() {
@@ -254,15 +254,13 @@ export default function SearchingFarmsScreen() {
     ).start();
   }, []);
 
-  // Initialize Socket.IO for real-time updates
+  // Initialize Pusher for real-time updates
   useEffect(() => {
-    const socket = io('http://178.128.194.234:8080');
-    
-    socket.on('connect', () => {
-      console.log('🔌 [SearchingFarms] Connected to socket server');
+    pusherService.initialize().then(() => {
+      console.log('🔌 [SearchingFarms] Connected to Pusher server');
     });
 
-    socket.on('order_status_update', (data: any) => {
+    pusherService.on('order_status_update', (data: any) => {
       console.log('🔌 [SearchingFarms] Order status update received:', data);
       console.log('🔌 [SearchingFarms] Current order ID:', createdOrderId);
       console.log('🔌 [SearchingFarms] Data order ID:', data.orderId);
@@ -290,7 +288,7 @@ export default function SearchingFarmsScreen() {
       }
     });
 
-    socket.on('order_update', (data: any) => {
+    pusherService.on('order_update', (data: any) => {
       console.log('🔌 [SearchingFarms] Order update received:', data);
       
       // If this is a new order and we have a current order, check if it's ours
@@ -304,7 +302,7 @@ export default function SearchingFarmsScreen() {
     });
 
     return () => {
-      socket.disconnect();
+      pusherService.disconnect();
     };
   }, []); // Remove dependency to ensure socket is always active
 

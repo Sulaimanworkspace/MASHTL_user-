@@ -17,7 +17,8 @@ import {
   Linking
 } from 'react-native';
 import { getUserData, getUserServiceOrders, getServices } from '../../services/api';
-import io from 'socket.io-client';
+import pusherService from '../../services/pusher';
+import { useSpinner } from '../../contexts/SpinnerContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -67,6 +68,7 @@ interface ServiceData {
 
 const User17: React.FC = () => {
   const router = useRouter();
+  const { showSpinner, hideSpinner } = useSpinner();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
@@ -75,33 +77,31 @@ const User17: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
   const [services, setServices] = useState<ServiceData[]>([]);
 
-  // Initialize Socket.IO for real-time updates
+  // Initialize Pusher for real-time updates
   useEffect(() => {
-    const socket = io('http://178.128.194.234:8080');
-    
-    socket.on('connect', () => {
-      console.log('Connected to socket server');
+    pusherService.initialize().then(() => {
+      console.log('Connected to Pusher server');
     });
 
-    socket.on('order_status_update', (data: any) => {
+    pusherService.on('order_status_update', (data: any) => {
       console.log('📱 Order status update received:', data);
       // Refresh orders to show updated status
     });
 
-    socket.on('order_completed', (data: { orderId: string }) => {
+    pusherService.on('order_completed', (data: { orderId: string }) => {
       console.log('📱 Order completed event received:', data.orderId);
       // Refresh orders to show updated status
       fetchOrders();
     });
 
     // Listen for order_cancelled event
-    socket.on('order_cancelled', (data: { orderId: string }) => {
+    pusherService.on('order_cancelled', (data: { orderId: string }) => {
       console.log('📱 Order cancelled event received:', data.orderId);
       setOrders(prev => prev.filter(order => order._id !== data.orderId));
     });
 
     return () => {
-      socket.disconnect();
+      pusherService.disconnect();
     };
   }, []);
 
@@ -183,6 +183,7 @@ const User17: React.FC = () => {
   const fetchOrders = async () => {
     try {
       console.log('🔍 Fetching user orders...');
+      showSpinner('جاري تحميل الطلبات...');
       const response = await getUserServiceOrders();
       if (response.success) {
         console.log('🔍 Fetched orders:', response.data.map((order: ServiceOrder) => ({
@@ -198,6 +199,7 @@ const User17: React.FC = () => {
       }
     } catch (error: any) {
       console.error('❌ Error fetching orders:', error);
+      hideSpinner();
       if (error.message === 'يرجى تسجيل الدخول أولاً') {
         console.log('🔐 Redirecting to login due to authentication error');
         router.replace('/(tabs)/auth/login');
@@ -206,6 +208,7 @@ const User17: React.FC = () => {
         setOrders([]);
       }
     } finally {
+      hideSpinner();
       setIsLoading(false);
     }
   };

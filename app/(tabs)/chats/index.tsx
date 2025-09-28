@@ -3,8 +3,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, RefreshControl, Animated } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserData, getUserServiceOrders, getUnreadMessageCount } from '../../services/api';
-import webSocketService from '../../services/websocket';
+import pusherService from '../../services/pusher';
 import SimpleUserAvatar from '../../components/SimpleUserAvatar';
 
 interface ChatOrder {
@@ -92,17 +93,29 @@ const ChatInboxScreen: React.FC = () => {
     }, [])
   );
 
-  // Initialize WebSocket and listen for events
+  // Initialize Pusher and listen for events
   useEffect(() => {
     let isInitialized = false;
     
-    const initializeWebSocket = async () => {
+    const initializePusher = async () => {
       if (isInitialized) return;
       isInitialized = true;
       
       try {
-        console.log('🔌 Initializing WebSocket in chat list...');
-        await webSocketService.initialize();
+        console.log('🔌 Initializing Pusher in chat list...');
+        // Get user ID from AsyncStorage and pass it explicitly
+        const userData = await AsyncStorage.getItem('user_data');
+        let userId = null;
+        if (userData) {
+          try {
+            const parsed = JSON.parse(userData);
+            userId = parsed._id;
+            console.log('🔌 User ID from storage:', userId);
+          } catch (error) {
+            console.error('❌ Error parsing user data:', error);
+          }
+        }
+        await pusherService.initialize(userId);
     
         // Create event handler functions
         const handleOrderCompleted = (data: { orderId: string }) => {
@@ -129,29 +142,29 @@ const ChatInboxScreen: React.FC = () => {
         };
 
         // Add event listeners
-        webSocketService.on('order_completed', handleOrderCompleted);
-        webSocketService.on('order_cancelled', handleOrderCancelled);
-        webSocketService.on('order_rejected', handleOrderRejected);
-        webSocketService.on('new_message', handleNewMessage);
+        pusherService.on('order_completed', handleOrderCompleted);
+        pusherService.on('order_cancelled', handleOrderCancelled);
+        pusherService.on('order_rejected', handleOrderRejected);
+        pusherService.on('new_message', handleNewMessage);
         
-        console.log('🔌 WebSocket initialized in chat list successfully');
+        console.log('🔌 Pusher initialized in chat list successfully');
       } catch (error) {
-        console.error('❌ Error initializing WebSocket:', error);
+        console.error('❌ Error initializing Pusher:', error);
         isInitialized = false;
       }
     };
 
     if (isLoggedIn) {
-    initializeWebSocket();
+    initializePusher();
     }
 
     return () => {
-      console.log('🔌 Cleaning up WebSocket listeners in chat list...');
+      console.log('🔌 Cleaning up Pusher listeners in chat list...');
       // Clean up event listeners with specific handlers
-      webSocketService.off('order_completed');
-      webSocketService.off('order_cancelled');
-      webSocketService.off('order_rejected');
-      webSocketService.off('new_message');
+      pusherService.off('order_completed');
+      pusherService.off('order_cancelled');
+      pusherService.off('order_rejected');
+      pusherService.off('new_message');
       isInitialized = false;
     };
   }, [isLoggedIn]);

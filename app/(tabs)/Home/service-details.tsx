@@ -1,7 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated } from 'react-native';
 import { getUserData, getServices } from '../../services/api';
 import { useSpinner } from '../../contexts/SpinnerContext';
@@ -15,6 +15,16 @@ export default function ServiceDetailsScreen() {
   const [serviceFeatures, setServiceFeatures] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Scroll to top when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+    }, [])
+  );
 
   // Load service features from API
   useEffect(() => {
@@ -143,7 +153,7 @@ export default function ServiceDetailsScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView ref={scrollViewRef} style={styles.content} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.bannerContainer}>
           <Animated.Image 
             key={`${id}-${image}-${Date.now()}`} // More unique key to force re-render

@@ -1,25 +1,36 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getUserData } from '../../services/api';
 import Colors from '../../_colors';
+import { useSpinner } from '../../contexts/SpinnerContext';
 
 export default function ProjectScreen() {
   const router = useRouter();
+  const { showSpinner, hideSpinner } = useSpinner();
   const { id, name, image, description } = useLocalSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Check authentication status
+  // Check authentication status and scroll to top
   useFocusEffect(
     useCallback(() => {
+      // Always scroll to top when screen is focused
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+
       const checkAuthStatus = async () => {
         try {
+          showSpinner('جاري تحميل المشروع...');
           const userData = await getUserData();
           setIsLoggedIn(userData && userData.name ? true : false);
         } catch (error) {
           setIsLoggedIn(false);
+        } finally {
+          hideSpinner();
         }
       };
       checkAuthStatus();
@@ -47,7 +58,7 @@ export default function ProjectScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView ref={scrollViewRef} style={styles.content}>
         {/* Project Image */}
         <View style={styles.imageContainer}>
           <Image 

@@ -20,8 +20,6 @@
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
 				<string>CA92.1</string>
-				<string>1C8F.1</string>
-				<string>C56D.1</string>
 			</array>
 		</dict>
 		<dict>
@@ -43,8 +41,96 @@
 		</dict>
 	</array>
 	<key>NSPrivacyCollectedDataTypes</key>
-	<array/>
+	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhoneNumber</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSPrivacyTracking</key>
 	<false/>
+	<key>NSPrivacySharedDataTypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacySharedDataType</key>
+			<string>NSPrivacySharedDataTypeLocation</string>
+			<key>NSPrivacySharedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacySharedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacySharedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacySharedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacySharedDataType</key>
+			<string>NSPrivacySharedDataTypeName</string>
+			<key>NSPrivacySharedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacySharedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacySharedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacySharedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacySharedDataType</key>
+			<string>NSPrivacySharedDataTypePhoneNumber</string>
+			<key>NSPrivacySharedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacySharedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacySharedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacySharedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

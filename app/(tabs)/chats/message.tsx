@@ -1,13 +1,14 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, Modal, TouchableWithoutFeedback, Dimensions } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, Modal, TouchableWithoutFeedback, Dimensions, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { getChatHistory, sendChatMessage, getUserData, cancelServiceOrder, updateOrderPrice } from '../../services/api';
-import webSocketService from '../../services/websocket';
+import api from '../../services/api';
+import pusherService from '../../services/pusher';
 import CustomModal from '../../components/CustomModal';
 import notificationService from '../../services/notifications';
 
@@ -59,6 +60,31 @@ const MessageScreen: React.FC = () => {
   const [priceProposals, setPriceProposals] = useState<any[]>([]);
   const [pendingPriceProposal, setPendingPriceProposal] = useState<any>(null);
   const [respondedPriceProposals, setRespondedPriceProposals] = useState<{[key: string]: 'accepted' | 'rejected'}>({});
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Keyboard event listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  // Disable swipe gesture navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        // Cleanup when screen loses focus
+      };
+    }, [])
+  );
 
   // Modal states for all alerts
   const [showModal, setShowModal] = useState(false);
@@ -74,7 +100,7 @@ const MessageScreen: React.FC = () => {
     setShowModal(true);
   };
 
-  // Initialize WebSocket connection and load chat history
+  // Initialize Pusher connection and load chat history
   useEffect(() => {
     let isInitialized = false;
     
@@ -103,16 +129,23 @@ const MessageScreen: React.FC = () => {
           }
         }
 
-        // Initialize WebSocket connection
-        await webSocketService.initialize(userData._id);
+        // Initialize Pusher connection
+        await pusherService.initialize(userData._id);
         
-        // Test WebSocket connection
-        console.log('🔌 WebSocket connection test:');
-        console.log('🔌 Is connected:', webSocketService.isConnected());
-        console.log('🔌 Current user ID:', webSocketService.getCurrentUserId());
+        // Test Pusher connection
+        console.log('🔌 Pusher connection test:');
+        console.log('🔌 Is connected:', pusherService.isConnected());
+        console.log('🔌 Current user ID:', pusherService.getCurrentUserId());
         
-        // Join chat room
-        webSocketService.joinChat(orderId);
+        // Wait a bit for connection to establish
+        setTimeout(() => {
+          console.log('🔌 Delayed connection test:');
+          console.log('🔌 Is connected:', pusherService.isConnected());
+          console.log('🔌 Current user ID:', pusherService.getCurrentUserId());
+          
+          // Join chat room
+          pusherService.joinChat(orderId);
+        }, 1000);
 
         // Create event handler functions
         const handleNewMessage = async (message: Message) => {
@@ -149,8 +182,8 @@ const MessageScreen: React.FC = () => {
 
         // Add event listeners
         console.log('🔌 Adding new_message listener for orderId:', orderId);
-        webSocketService.on('new_message', handleNewMessage);
-        webSocketService.on('order_status_update', handleOrderStatusUpdate);
+        pusherService.on('new_message', handleNewMessage);
+        pusherService.on('order_status_update', handleOrderStatusUpdate);
 
         console.log('🔌 Chat initialized successfully for orderId:', orderId);
         setIsLoading(false);
@@ -167,26 +200,26 @@ const MessageScreen: React.FC = () => {
     return () => {
       console.log('🔌 Cleaning up chat for orderId:', orderId);
       // Leave chat room and clean up event listeners
-      webSocketService.leaveChat();
+      pusherService.leaveChat();
       console.log('🔌 Removing new_message listener for orderId:', orderId);
-      webSocketService.off('new_message');
-      webSocketService.off('order_status_update');
+      pusherService.off('new_message');
+      pusherService.off('order_status_update');
       isInitialized = false;
     };
   }, [orderId]);
 
   // Order status updates are now handled in the main useEffect above
 
-  const testWebSocketConnection = () => {
-    console.log('🧪 Testing WebSocket connection...');
-    console.log('🧪 Is connected:', webSocketService.isConnected());
-    console.log('🧪 Current user ID:', webSocketService.getCurrentUserId());
-    console.log('🧪 Current order ID:', webSocketService.getCurrentOrderId());
+  const testPusherConnection = () => {
+    console.log('🧪 Testing Pusher connection...');
+    console.log('🧪 Is connected:', pusherService.isConnected());
+    console.log('🧪 Current user ID:', pusherService.getCurrentUserId());
+    console.log('🧪 Current order ID:', pusherService.getCurrentOrderId());
     
     // Test emit
-    if (webSocketService.isConnected()) {
+    if (pusherService.isConnected()) {
       console.log('🧪 Emitting test message...');
-      webSocketService.emit('test_message', { message: 'Test from client', timestamp: Date.now() });
+      pusherService.emit('test_message', { message: 'Test from client', timestamp: Date.now() });
     }
   };
 
@@ -313,20 +346,30 @@ const MessageScreen: React.FC = () => {
         // Continue anyway since the message was sent successfully
       }
       
-      // Send WebSocket event to farmer
-      console.log('💰 Emitting price_proposal_response event:', {
+      // Send API request to accept price proposal
+      console.log('💰 Sending price proposal acceptance to server:', {
         orderId,
-        farmerId,
-        status: 'accepted',
         price: proposal.price
       });
-      webSocketService.emit('price_proposal_response', {
-        orderId,
-        farmerId,
-        status: 'accepted',
-        price: proposal.price
-      });
-      console.log('💰 Price proposal response event emitted successfully');
+      
+      try {
+        const response = await api.put(`/api/service-orders/${orderId}/price`, {
+          price: proposal.price
+        }, {
+          headers: {
+            'Authorization': `Bearer ${currentUser!.token}`
+          }
+        });
+        
+        const data = response.data;
+        if (data.success) {
+          console.log('✅ Price proposal accepted successfully');
+        } else {
+          console.error('❌ Failed to accept price proposal:', data.message);
+        }
+      } catch (error) {
+        console.error('❌ Error accepting price proposal:', error);
+      }
       
       // Removed success popup modal - user will see the button change to "تم القبول" instead
     } catch (error) {
@@ -385,20 +428,30 @@ const MessageScreen: React.FC = () => {
         return;
       }
       
-      // Send WebSocket event to farmer
-      console.log('💰 Emitting price_proposal_response event (rejected):', {
+      // Send API request to reject price proposal
+      console.log('💰 Sending price proposal rejection to server:', {
         orderId,
-        farmerId,
-        status: 'rejected',
         price: proposal.price
       });
-      webSocketService.emit('price_proposal_response', {
-        orderId,
-        farmerId,
-        status: 'rejected',
-        price: proposal.price
-      });
-      console.log('💰 Price proposal rejection event emitted successfully');
+      
+      try {
+        const response = await api.put(`/api/service-orders/${orderId}/price/reject`, {
+          price: proposal.price
+        }, {
+          headers: {
+            'Authorization': `Bearer ${currentUser!.token}`
+          }
+        });
+        
+        const data = response.data;
+        if (data.success) {
+          console.log('✅ Price proposal rejected successfully');
+        } else {
+          console.error('❌ Failed to reject price proposal:', data.message);
+        }
+      } catch (error) {
+        console.error('❌ Error rejecting price proposal:', error);
+      }
       
       showCustomModal('warning', 'مرفوض', 'تم رفض عرض السعر');
     } catch (error) {
@@ -511,6 +564,15 @@ const MessageScreen: React.FC = () => {
           ref={flatListRef}
           data={messages}
           keyExtractor={item => item._id}
+          bounces={false}
+          onScrollBeginDrag={(e) => {
+            // Prevent horizontal swipe gestures
+            e.nativeEvent.contentOffset.x = 0;
+          }}
+          onTouchStart={(e) => {
+            // Disable swipe gestures
+            e.stopPropagation();
+          }}
           renderItem={({ item }) => {
             const isMyMessage = item.sender._id === currentUser?._id;
                            const isPriceProposal = !isMyMessage && item.message.includes('عرض سعر جديد:');
@@ -615,15 +677,31 @@ const MessageScreen: React.FC = () => {
               style={styles.minusButton} 
               ref={minusButtonRef}
               onPress={() => {
+                // Prevent any navigation or chat closing
                 if (minusButtonRef.current) {
                   minusButtonRef.current.measure((fx, fy, width, height, px, py) => {
+                    // Calculate position relative to screen dimensions
+                    const screenHeight = Dimensions.get('window').height;
+                    const screenWidth = Dimensions.get('window').width;
+                    
+                    // Position above the button with proper spacing, accounting for keyboard
+                    // Adjust position based on keyboard height to prevent chat input movement
+                    const adjustedTop = keyboardHeight > 0 ? py - 80 : py - 100;
+                    const dropdownTop = Math.max(50, adjustedTop);
+                    const dropdownLeft = Math.max(10, Math.min(px - 50, screenWidth - 120));
+                    
                     setDropdownPosition({
-                      top: py - 100, // 60px above the icon for spacing
-                      left: px - 20 // adjust for menu width
+                      top: dropdownTop,
+                      left: dropdownLeft
                     });
                     setShowCancelSheet(true);
                   });
                 } else {
+                  // Fallback positioning if measure fails
+                  setDropdownPosition({
+                    top: 200,
+                    left: 50
+                  });
                   setShowCancelSheet(true);
                 }
               }}
@@ -655,31 +733,15 @@ const MessageScreen: React.FC = () => {
         </View>
       </KeyboardAvoidingView>
       {/* Dropdown Menu for Cancel */}
-      <Modal
-        visible={showCancelSheet}
-        transparent
-        animationType="none"
-        onRequestClose={() => setShowCancelSheet(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowCancelSheet(false)}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.1)' }}>
-            <TouchableWithoutFeedback>
-              <View style={{
-                position: 'absolute',
-                top: dropdownPosition.top,
-                left: dropdownPosition.left,
-                backgroundColor: '#fff',
-                borderRadius: 12,
-                paddingVertical: 8,
-                paddingHorizontal: 24,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.15,
-                shadowRadius: 8,
-                elevation: 6,
-                alignItems: 'center',
-                minWidth: 120
-              }}>
+      {showCancelSheet && (
+        <View style={styles.dropdownModalContainer}>
+          <TouchableWithoutFeedback onPress={() => setShowCancelSheet(false)}>
+            <View style={styles.dropdownBackdrop} />
+          </TouchableWithoutFeedback>
+          <View style={[styles.dropdownContainer, {
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+          }]}>
                 <TouchableOpacity
                   onPress={() => {
                     setShowCancelSheet(false);
@@ -712,11 +774,9 @@ const MessageScreen: React.FC = () => {
                 >
                   <Text style={{ color: '#000', fontSize: 16, fontWeight: 'bold' }}>تتبع الطلب</Text>
                 </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
           </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        </View>
+      )}
       {/* Cancel Confirmation Modal */}
       <Modal
         visible={showConfirmModal}
@@ -952,9 +1012,10 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    pointerEvents: 'box-none', // Allow touches to pass through to chat
   },
   modalContainer: {
     flex: 1,
@@ -1157,6 +1218,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    pointerEvents: 'auto', // Only the backdrop should capture touches
+  },
+  dropdownModalContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    pointerEvents: 'box-none',
+  },
+  dropdownBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    pointerEvents: 'auto',
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    alignItems: 'center',
+    minWidth: 120,
+    maxWidth: 200,
+    zIndex: 1001,
+    // Prevent the dropdown from affecting the chat input layout
+    // transform: [{ translateZ: 0 }], // Force hardware acceleration
   },
 });
 

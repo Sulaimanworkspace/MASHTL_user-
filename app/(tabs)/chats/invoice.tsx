@@ -1,6 +1,6 @@
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
   StatusBar,
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { getInvoiceData, getUserData } from '../../services/api';
 import CustomModal from '../../components/CustomModal';
-import webSocketService from '../../services/websocket';
+import pusherService from '../../services/pusher';
 
 interface InvoiceData {
   serviceType: string;
@@ -56,6 +56,15 @@ const InvoiceScreen: React.FC = () => {
 
   // Payment loading state
   const [paymentLoading, setPaymentLoading] = useState(false);
+
+  // Disable swipe gesture navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        // Cleanup when screen loses focus
+      };
+    }, [])
+  );
 
   // Helper function to show custom modal
   const showCustomModal = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
@@ -109,19 +118,47 @@ const InvoiceScreen: React.FC = () => {
       }
     };
 
-    const initializeWebSocket = async () => {
+    const initializePusher = async () => {
       try {
-        await webSocketService.initialize();
-        webSocketService.joinChat(orderId);
+        await pusherService.initialize();
+        pusherService.joinChat(orderId);
         
+        // Listen for payment status updates
+        pusherService.on('payment_status_updated', (data: any) => {
+          console.log('💰 Payment status update received in invoice:', data);
+          if (data.orderId === orderId) {
+            // Update payment status based on received data
+            let newPaymentStatus = 'pending';
+            let newPaymentMessage = 'تم إصدار الفاتورة - في انتظار الدفع';
+            
+            if (data.paymentStatus === 'Paid') {
+              newPaymentStatus = 'paid';
+              newPaymentMessage = 'تم الدفع بنجاح';
+            } else if (data.paymentStatus === 'Failed') {
+              newPaymentStatus = 'failed';
+              newPaymentMessage = 'فشل في الدفع';
+            } else if (data.paymentStatus === 'Cancelled') {
+              newPaymentStatus = 'cancelled';
+              newPaymentMessage = 'تم إلغاء الدفع';
+            }
+            
+            setInvoiceData(prev => ({
+              ...prev,
+              paymentStatus: newPaymentStatus,
+              paymentMessage: newPaymentMessage
+            }));
+            
+            console.log('✅ Payment status updated in invoice:', newPaymentStatus);
+          }
+        });
 
       } catch (error) {
-        console.error('❌ Error initializing WebSocket:', error);
+        console.error('❌ Error initializing Pusher:', error);
       }
     };
 
     fetchInvoiceData();
-    initializeWebSocket();
+    initializePusher();
 
     // Check payment status from navigation params
     const paymentSuccess = params.paymentSuccess as string;
@@ -141,6 +178,11 @@ const InvoiceScreen: React.FC = () => {
       showCustomModal('error', 'خطأ في إعدادات الدفع', 'يرجى التواصل مع الدعم الفني لإعداد إعدادات الدفع بشكل صحيح.');
     }
 
+    // Cleanup function
+    return () => {
+      console.log('🧹 Cleaning up Pusher listeners in invoice');
+      pusherService.off('payment_status_updated');
+    };
 
   }, [orderId, params.paymentSuccess]);
 
@@ -212,7 +254,18 @@ const InvoiceScreen: React.FC = () => {
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        onScrollBeginDrag={(e) => {
+          // Prevent horizontal swipe gestures
+          e.nativeEvent.contentOffset.x = 0;
+        }}
+        onTouchStart={(e) => {
+          // Disable swipe gestures
+          e.stopPropagation();
+        }}>
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#4CAF50" />

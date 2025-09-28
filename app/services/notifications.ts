@@ -284,10 +284,10 @@ console.log('🧪 [NOTIFICATIONS] Testing exports...');
 console.log('🧪 [NOTIFICATIONS] notificationService export:', typeof notificationService);
 console.log('🧪 [NOTIFICATIONS] default export:', typeof (notificationServiceInstance || fallbackService));
 
-// Add missing function for WebSocket notifications
-export const sendNotificationFromWebSocket = (notification: any) => {
+// Add missing function for Pusher notifications
+export const sendNotificationFromPusher = (notification: any) => {
   try {
-    console.log('🔔 [NOTIFICATIONS] Sending WebSocket notification:', notification);
+    console.log('🔔 [NOTIFICATIONS] Sending Pusher notification:', notification);
     
     // Send local notification
     if (notificationServiceInstance && typeof notificationServiceInstance.sendLocalNotification === 'function') {
@@ -296,11 +296,11 @@ export const sendNotificationFromWebSocket = (notification: any) => {
         body: notification.message || notification.body || 'لديك إشعار جديد',
         data: notification.data || {}
       });
-      console.log('✅ [NOTIFICATIONS] WebSocket notification sent successfully');
+      console.log('✅ [NOTIFICATIONS] Pusher notification sent successfully');
     } else {
       console.log('⚠️ [NOTIFICATIONS] notificationServiceInstance is not properly initialized');
     }
   } catch (error) {
-    console.log('⚠️ [NOTIFICATIONS] Error sending WebSocket notification:', error);
+    console.log('⚠️ [NOTIFICATIONS] Error sending Pusher notification:', error);
   }
 }; 

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { getUserData, updateUserProfile } from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +32,8 @@ const Settings: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [modalType, setModalType] = useState<'success' | 'error'>('success');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load user data when screen is focused
   useFocusEffect(
@@ -114,7 +117,44 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      // Call delete account API
+      const response = await fetch('http://localhost:9090/api/users/delete-account', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userData?.token}`,
+        },
+      });
 
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Clear user data and redirect to login
+        await AsyncStorage.clear();
+        setModalMessage('تم حذف الحساب بنجاح');
+        setModalType('success');
+        setShowModal(true);
+        setTimeout(() => {
+          router.replace('/(tabs)/auth/login');
+        }, 2000);
+      } else {
+        setModalMessage(data.message || 'فشل في حذف الحساب');
+        setModalType('error');
+        setShowModal(true);
+      }
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      setModalMessage('حدث خطأ أثناء حذف الحساب');
+      setModalType('error');
+      setShowModal(true);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -234,6 +274,18 @@ const Settings: React.FC = () => {
               <Text style={styles.updateButtonText}>تحديث البيانات</Text>
             )}
           </TouchableOpacity>
+
+          {/* Delete Account Section */}
+          <View style={[styles.section, { marginTop: 30 }]}>
+            <Text style={styles.sectionTitle}>إدارة الحساب</Text>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => setShowDeleteModal(true)}
+            >
+              <FontAwesome5 name="trash" size={16} color="#FF3B30" />
+              <Text style={styles.deleteButtonText}>حذف الحساب</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
 
@@ -271,6 +323,50 @@ const Settings: React.FC = () => {
               >
                 <Text style={styles.modalButtonText}>حسناً</Text>
               </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.successIconContainer}>
+                <FontAwesome5 name="exclamation-triangle" size={50} color="#FF9500" />
+              </View>
+              <Text style={[styles.modalTitle, { color: '#333' }]}>
+                تأكيد حذف الحساب
+              </Text>
+              <Text style={[styles.modalMessage, { color: '#666', textAlign: 'center', marginBottom: 20 }]}>
+                هل أنت متأكد من أنك تريد حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه وستفقد جميع بياناتك.
+              </Text>
+              <View style={styles.modalButtonContainer}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, { backgroundColor: '#FF3B30', marginRight: 10 }]}
+                  onPress={handleDeleteAccount}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.modalButtonText}>حذف الحساب</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalButton, { backgroundColor: '#8E8E93' }]}
+                  onPress={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                >
+                  <Text style={styles.modalButtonText}>إلغاء</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -450,6 +546,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     letterSpacing: 0.5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 16,
+    color: '#333',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 10,
+  },
+  deleteButtonText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

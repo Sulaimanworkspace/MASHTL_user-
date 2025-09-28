@@ -16,6 +16,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { updateUserLocation, getUserData, storeUserData, refreshUserDataFromServer } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import { pusherService } from '../../services/pusher';
 
 // Global refresh trigger for location updates
 export const triggerLocationRefresh = () => {
@@ -35,6 +36,15 @@ export default function MapPicker() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false); // Prevent duplicate updates
   const [locationPermission, setLocationPermission] = useState(false);
+
+  // Disable swipe gesture navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        // Cleanup when screen loses focus
+      };
+    }, [])
+  );
 
   // Refresh user data on mount to ensure latest location
   useEffect(() => {
@@ -102,12 +112,12 @@ export default function MapPicker() {
       } else {
         console.log('❌ Location permission denied');
         setLocationPermission(false);
+        // Don't ask user to reconsider - just inform them they can use manual location selection
         Alert.alert(
           'إذن الموقع',
-          'نحتاج إلى إذن الموقع لعرض موقعك على الخريطة',
+          'يمكنك تحديد موقعك يدوياً على الخريطة أو الذهاب إلى الإعدادات لتفعيل الموقع',
           [
-            { text: 'إلغاء', style: 'cancel' },
-            { text: 'إعادة المحاولة', onPress: requestLocationPermission }
+            { text: 'موافق', style: 'default' }
           ]
         );
       }
@@ -379,6 +389,15 @@ export default function MapPicker() {
             
             console.log('✅ Location saved successfully');
             
+            // Send real-time location update via Pusher
+            try {
+              console.log('🔌 Sending location update via Pusher...');
+              await pusherService.updateUserLocation(finalLatitude, finalLongitude);
+              console.log('✅ Pusher location update sent successfully');
+            } catch (pusherError) {
+              console.log('⚠️ Pusher location update failed (non-blocking):', pusherError);
+            }
+            
             clearTimeout(updateTimeout); // Clear timeout
             setIsLoading(false);
             setIsUpdatingLocation(false);
@@ -504,6 +523,10 @@ export default function MapPicker() {
           style={styles.webview}
           onMessage={handleWebViewMessage}
           onError={handleWebViewError}
+          onTouchStart={(e) => {
+            // Disable swipe gestures
+            e.stopPropagation();
+          }}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           startInLoadingState={false}

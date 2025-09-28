@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { getChatHistory } from '../../services/api';
-import webSocketService from '../../services/websocket';
+import pusherService from '../../services/pusher';
 
 const { width } = Dimensions.get('window');
 
@@ -72,14 +72,14 @@ export default function TrackOrderScreen() {
       }
     };
     fetchOrder();
-    // WebSocket: listen for order status updates
-    webSocketService.on('order_status_update', (data: { orderId: string; status: string }) => {
+    // Pusher: listen for order status updates
+    pusherService.on('order_status_update', (data: { orderId: string; status: string }) => {
       if (data.orderId === orderId && data.status) {
         setOrderStatus(data.status);
       }
     });
     return () => {
-      webSocketService.off('order_status_update');
+      pusherService.off('order_status_update');
     };
   }, [orderId]);
 

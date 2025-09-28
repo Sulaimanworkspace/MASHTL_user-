@@ -7,29 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0DE71F39C19AE7F7F2B07DC3 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA363E833A57A86B464C260E /* ExpoModulesProvider.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		91ECA40634F559CF50663F87 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 621CDB4368FDEE900F215444 /* PrivacyInfo.xcprivacy */; };
+		53A4EF864118B9041BF056E0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0E16801BBE795CA4C6F583B8 /* PrivacyInfo.xcprivacy */; };
+		7607CCF2CB75228E20A477E1 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA7877B356E1EE2B37F5F5F /* ExpoModulesProvider.swift */; };
+		996F9B9D82673C08BEFE02E3 /* libPods-mshtl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6773C437FF49157C4F2FC197 /* libPods-mshtl.a */; };
+		A8956827994B4715B5BE8F31 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FF1FF34223C140F895296745 /* GoogleService-Info.plist */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		CE4462C36C0D2FEC26A3DB1E /* libPods-mshtl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 32AD217632EE40E2BCAB961E /* libPods-mshtl.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0CA7877B356E1EE2B37F5F5F /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-mshtl/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		0E16801BBE795CA4C6F583B8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = mshtl/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* mshtl.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mshtl.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = mshtl/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = mshtl/Info.plist; sourceTree = "<group>"; };
-		32AD217632EE40E2BCAB961E /* libPods-mshtl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-mshtl.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		621CDB4368FDEE900F215444 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = mshtl/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		58389D5600840075F55C89C5 /* Pods-mshtl.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-mshtl.debug.xcconfig"; path = "Target Support Files/Pods-mshtl/Pods-mshtl.debug.xcconfig"; sourceTree = "<group>"; };
+		6773C437FF49157C4F2FC197 /* libPods-mshtl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-mshtl.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = mshtl/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C595D6D49262C38CB89C12FF /* Pods-mshtl.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-mshtl.release.xcconfig"; path = "Target Support Files/Pods-mshtl/Pods-mshtl.release.xcconfig"; sourceTree = "<group>"; };
-		DA363E833A57A86B464C260E /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-mshtl/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		C6B477DCBF77C8A62045EA1C /* Pods-mshtl.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-mshtl.release.xcconfig"; path = "Target Support Files/Pods-mshtl/Pods-mshtl.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = mshtl/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* mshtl-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "mshtl-Bridging-Header.h"; path = "mshtl/mshtl-Bridging-Header.h"; sourceTree = "<group>"; };
-		FAC41B00C0E85E1C3D3696BA /* Pods-mshtl.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-mshtl.debug.xcconfig"; path = "Target Support Files/Pods-mshtl/Pods-mshtl.debug.xcconfig"; sourceTree = "<group>"; };
+		FF1FF34223C140F895296745 /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "mshtl/GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,7 +39,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE4462C36C0D2FEC26A3DB1E /* libPods-mshtl.a in Frameworks */,
+				996F9B9D82673C08BEFE02E3 /* libPods-mshtl.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,7 +55,8 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				621CDB4368FDEE900F215444 /* PrivacyInfo.xcprivacy */,
+				FF1FF34223C140F895296745 /* GoogleService-Info.plist */,
+				0E16801BBE795CA4C6F583B8 /* PrivacyInfo.xcprivacy */,
 			);
 			name = mshtl;
 			sourceTree = "<group>";
@@ -62,17 +65,26 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				32AD217632EE40E2BCAB961E /* libPods-mshtl.a */,
+				6773C437FF49157C4F2FC197 /* libPods-mshtl.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		3D92A169EEBE64E913AB339D /* mshtl */ = {
+		2E5FDF1EC7CA3937A0F633E4 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				DA363E833A57A86B464C260E /* ExpoModulesProvider.swift */,
+				58389D5600840075F55C89C5 /* Pods-mshtl.debug.xcconfig */,
+				C6B477DCBF77C8A62045EA1C /* Pods-mshtl.release.xcconfig */,
 			);
-			name = mshtl;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		620FDA55CB52604119F8F223 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				BFAD144751D7EF408D078F9F /* mshtl */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -89,8 +101,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				FE9D5CC027B6FE709EBC87D2 /* Pods */,
-				CBAFE8582F769FB8E0893441 /* ExpoModulesProviders */,
+				2E5FDF1EC7CA3937A0F633E4 /* Pods */,
+				620FDA55CB52604119F8F223 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -114,21 +126,12 @@
 			path = mshtl/Supporting;
 			sourceTree = "<group>";
 		};
-		CBAFE8582F769FB8E0893441 /* ExpoModulesProviders */ = {
+		BFAD144751D7EF408D078F9F /* mshtl */ = {
 			isa = PBXGroup;
 			children = (
-				3D92A169EEBE64E913AB339D /* mshtl */,
+				0CA7877B356E1EE2B37F5F5F /* ExpoModulesProvider.swift */,
 			);
-			name = ExpoModulesProviders;
-			sourceTree = "<group>";
-		};
-		FE9D5CC027B6FE709EBC87D2 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				FAC41B00C0E85E1C3D3696BA /* Pods-mshtl.debug.xcconfig */,
-				C595D6D49262C38CB89C12FF /* Pods-mshtl.release.xcconfig */,
-			);
-			path = Pods;
+			name = mshtl;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,13 +142,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "mshtl" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				6EF8279F577D5AFF7A97A617 /* [Expo] Configure project */,
+				666449292F19376ED57D968B /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				1506A58A4AB5DFFF0C697041 /* [CP] Embed Pods Frameworks */,
+				3209F666B39874C6DE9221F4 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -166,7 +169,6 @@
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1250;
-						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -196,7 +198,8 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				91ECA40634F559CF50663F87 /* PrivacyInfo.xcprivacy in Resources */,
+				A8956827994B4715B5BE8F31 /* GoogleService-Info.plist in Resources */,
+				53A4EF864118B9041BF056E0 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,7 +243,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		1506A58A4AB5DFFF0C697041 /* [CP] Embed Pods Frameworks */ = {
+		3209F666B39874C6DE9221F4 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -260,7 +263,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-mshtl/Pods-mshtl-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		6EF8279F577D5AFF7A97A617 /* [Expo] Configure project */ = {
+		666449292F19376ED57D968B /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -347,7 +350,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				0DE71F39C19AE7F7F2B07DC3 /* ExpoModulesProvider.swift in Sources */,
+				7607CCF2CB75228E20A477E1 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -356,13 +359,11 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = FAC41B00C0E85E1C3D3696BA /* Pods-mshtl.debug.xcconfig */;
+			baseConfigurationReference = 58389D5600840075F55C89C5 /* Pods-mshtl.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = mshtl/mshtl.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GQ245B6F47;
 				ENABLE_BITCODE = NO;
@@ -371,13 +372,12 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = mshtl/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.3.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -400,23 +400,20 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C595D6D49262C38CB89C12FF /* Pods-mshtl.release.xcconfig */;
+			baseConfigurationReference = C6B477DCBF77C8A62045EA1C /* Pods-mshtl.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = mshtl/mshtl.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GQ245B6F47;
 				INFOPLIST_FILE = mshtl/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.3.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -491,10 +488,7 @@
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -549,10 +543,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;

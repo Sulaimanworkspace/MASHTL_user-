@@ -5,6 +5,7 @@ import React, { useState, useCallback } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import Colors from '../../_colors';
 import { getUserData, getUserNotifications, deleteNotification, markNotificationAsRead } from '../../services/api';
+import { useSpinner } from '../../contexts/SpinnerContext';
 
 interface Notification {
   _id: string;
@@ -17,6 +18,7 @@ interface Notification {
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { showSpinner, hideSpinner } = useSpinner();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>('');
@@ -66,6 +68,7 @@ export default function NotificationsScreen() {
 
   const loadNotifications = async () => {
     try {
+      showSpinner('جاري تحميل الإشعارات...');
       const userData = await getUserData();
       if (!userData || !userData._id) {
         router.replace('/(tabs)/auth/login');
@@ -80,8 +83,10 @@ export default function NotificationsScreen() {
       }
     } catch (error) {
       console.error('Error loading notifications:', error);
+      hideSpinner();
       Alert.alert('خطأ', 'فشل في تحميل الإشعارات');
     } finally {
+      hideSpinner();
       setLoading(false);
     }
   };

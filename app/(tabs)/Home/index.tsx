@@ -16,13 +16,13 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserData, getNotificationCount, getServices, refreshUserDataFromServer } from '../../services/api';
 import { ensureFreshUserData } from '../../utils/userDataManager';
-import webSocketService from '../../services/websocket';
+import pusherService from '../../services/pusher';
 import { notificationService } from '../../services/notifications';
 import Banner from '../../components/Banner';
 import CustomFooter from '../../components/CustomFooter';
 import LocationPickerModal from '../../components/LocationPickerModal';
 import TwoFactorTest from '../../components/TwoFactorTest';
-import { useSpinner } from '../../contexts/SpinnerContext';
+// import { useSpinner } from '../../contexts/SpinnerContext'; //comment out 
 
 // Debug notifications service import
 console.log('🔧 [HOME] Importing notificationService:', notificationService);
@@ -133,10 +133,10 @@ const User4: React.FC = () => {
     console.log('🔴 Notification count changed to:', notificationCount);
   }, [notificationCount]);
 
-  // Set up WebSocket for real-time notification updates
+  // Set up Pusher for real-time notification updates
   useEffect(() => {
     if (isLoggedIn) {
-      console.log('🔌 Setting up WebSocket for real-time notifications');
+      console.log('🔌 Setting up Pusher for real-time notifications');
       
       // Initialize notification service
       notificationService.initialize().then((success) => {
@@ -153,10 +153,10 @@ const User4: React.FC = () => {
         }
       });
 
-      // Initialize WebSocket connection
-      const initializeWebSocket = async () => {
+      // Initialize Pusher connection
+      const initializePusher = async () => {
         try {
-          console.log('🔌 Initializing WebSocket connection...');
+          console.log('🔌 Initializing Pusher connection...');
           
           // Check user data first
           const userData = await AsyncStorage.getItem('user_data');
@@ -166,15 +166,15 @@ const User4: React.FC = () => {
             console.log('🔌 Parsed user ID:', parsed._id);
           }
           
-          await webSocketService.initialize();
+          await pusherService.initialize();
           
           // Check connection status
-          console.log('🔌 WebSocket connected:', webSocketService.isConnected());
-          console.log('🔌 Current user ID:', webSocketService.getCurrentUserId());
+          console.log('🔌 Pusher connected:', pusherService.isConnected());
+          console.log('🔌 Current user ID:', pusherService.getCurrentUserId());
           
           // Listen for new notifications
-          webSocketService.on('new_notification', async (notification: any) => {
-            console.log('📱 WebSocket notification received:', notification);
+          pusherService.on('new_notification', async (notification: any) => {
+            console.log('📱 Pusher notification received:', notification);
             console.log('📱 Notification title:', notification.title);
             console.log('📱 Notification message:', notification.message);
             setNotificationCount(prev => prev + 1);
@@ -194,16 +194,16 @@ const User4: React.FC = () => {
           });
           
           // Listen for connection events
-          webSocketService.on('connect', () => {
-            console.log('🔌 WebSocket connected successfully');
+          pusherService.on('connect', () => {
+            console.log('🔌 Pusher connected successfully');
           });
           
-          webSocketService.on('disconnect', () => {
-            console.log('🔌 WebSocket disconnected');
+          pusherService.on('disconnect', () => {
+            console.log('🔌 Pusher disconnected');
           });
           
-          webSocketService.on('connect_error', (error: any) => {
-            console.error('🔌 WebSocket connection error:', error);
+          pusherService.on('connect_error', (error: any) => {
+            console.error('🔌 Pusher connection error:', error);
           });
           
         } catch (error) {
@@ -211,7 +211,7 @@ const User4: React.FC = () => {
         }
       };
 
-      initializeWebSocket();
+      initializePusher();
 
       // Set up notification response listener (when user taps notification)
       const notificationResponseListener = notificationService.addNotificationResponseReceivedListener((response) => {
@@ -226,8 +226,8 @@ const User4: React.FC = () => {
 
       // Cleanup on unmount
       return () => {
-        console.log('🔌 Cleaning up WebSocket connection');
-        webSocketService.off('new_notification');
+        console.log('🔌 Cleaning up Pusher connection');
+        pusherService.off('new_notification');
         notificationResponseListener?.remove();
       };
     }
@@ -339,22 +339,27 @@ const User4: React.FC = () => {
           }
           
           // First try to refresh user data from server to get latest location
-          try {
-            console.log('🔄 Refreshing user data from server to get latest location...');
-            await refreshUserDataFromServer();
-            console.log('✅ User data refreshed from server');
-            
-            // If force refresh, also reload services
-            if (shouldForceRefresh) {
-              console.log('🔄 Force refresh - reloading services...');
-              setServicesLoaded(false); // This will trigger services reload
-              
-              // Clear the refresh parameter to prevent repeated refreshes
-              // Note: We can't modify params directly, but we can track it in state
-              console.log('✅ Force refresh completed, clearing refresh flag');
+          // Only refresh if user is logged in
+          if (isLoggedIn) {
+            try {
+              console.log('🔄 Refreshing user data from server to get latest location...');
+              await refreshUserDataFromServer();
+              console.log('✅ User data refreshed from server');
+            } catch (refreshError) {
+              console.log('⚠️ Could not refresh from server, using local data:', refreshError);
             }
-          } catch (refreshError) {
-            console.log('⚠️ Could not refresh from server, using local data:', refreshError);
+          } else {
+            console.log('👤 User not logged in, skipping server refresh');
+          }
+          
+          // If force refresh, also reload services
+          if (shouldForceRefresh) {
+            console.log('🔄 Force refresh - reloading services...');
+            setServicesLoaded(false); // This will trigger services reload
+            
+            // Clear the refresh parameter to prevent repeated refreshes
+            // Note: We can't modify params directly, but we can track it in state
+            console.log('✅ Force refresh completed, clearing refresh flag');
           }
           
           // Use getUserData to get the refreshed data
@@ -630,12 +635,12 @@ const User4: React.FC = () => {
             {/* <TouchableOpacity 
               style={[styles.notificationButton, { marginLeft: 10, backgroundColor: '#2196F3' }]}
               onPress={async () => {
-                console.log('🔌 Test WebSocket button pressed');
-                const success = await webSocketService.testConnection();
+                console.log('🔌 Test Pusher button pressed');
+                const success = await pusherService.testConnection();
                 if (success) {
-                  alert('WebSocket connection test: SUCCESS!');
+                  alert('Pusher connection test: SUCCESS!');
                 } else {
-                  alert('WebSocket connection test: FAILED! Check console for details.');
+                  alert('Pusher connection test: FAILED! Check console for details.');
                 }
               }}
             >

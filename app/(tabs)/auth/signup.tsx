@@ -3,6 +3,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Keyboard, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { checkPhoneExists, registerUser, storeUserData } from '../../services/api';
+import pusherService from '../../services/pusher';
+import notificationService from '../../services/notifications';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -203,12 +205,11 @@ export default function SignupScreen() {
       const fullPhone = `+966${phone}`;
       
       // Verify OTP via server (which checks database)
-      // const verifyResponse = await fetch('http://178.128.194.234:8080/api/auth/verify-otp', { // Production URL
       // Create AbortController for timeout
       const verifyController = new AbortController();
       const verifyTimeoutId = setTimeout(() => verifyController.abort(), 30000); // 30 second timeout
       
-      const verifyResponse = await fetch('http://178.128.194.234:8080/api/auth/verify-otp', { // Production server URL
+      const verifyResponse = await fetch('http://178.128.194.234:8080/api/auth/verify-otp', { // Production URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -227,16 +228,49 @@ export default function SignupScreen() {
       if (verifyResult.success) {
         console.log('✅ OTP verification successful via server!');
         
-        // Register user after OTP verification
-        const result = await registerUser({
-          name,
-          phone: fullPhone,
-          password
-        });
-        
-        // Store user data
-        if (result.success && result.data) {
-          await storeUserData(result.data);
+        // Check if server response contains user data and token (for existing users)
+        if (verifyResult.user && verifyResult.token) {
+          console.log('✅ Using fresh user data from OTP verification response');
+          const freshUserData = {
+            ...verifyResult.user,
+            token: verifyResult.token
+          };
+          
+          // Store fresh user data
+          await storeUserData(freshUserData);
+          
+          // Initialize Pusher for the user
+          await pusherService.initialize(freshUserData._id);
+          
+          // Save push token to server after successful login
+          try {
+            await notificationService.saveJWTTokenToServer();
+          } catch (error) {
+            console.log('⚠️ Could not save push token to server:', error);
+          }
+        } else {
+          // Register new user after OTP verification
+          console.log('✅ Registering new user after OTP verification');
+          const result = await registerUser({
+            name,
+            phone: fullPhone,
+            password
+          });
+          
+          // Store user data
+          if (result.success && result.data) {
+            await storeUserData(result.data);
+            
+            // Initialize Pusher for the user
+            await pusherService.initialize(result.data._id);
+            
+            // Save push token to server after successful registration
+            try {
+              await notificationService.saveJWTTokenToServer();
+            } catch (error) {
+              console.log('⚠️ Could not save push token to server:', error);
+            }
+          }
         }
         
         // Success - navigate to home
@@ -353,12 +387,11 @@ export default function SignupScreen() {
       
       // First, let server generate and save OTP to database
       console.log('💾 Getting OTP from server and saving to database...');
-      // const saveResponse = await fetch('http://178.128.194.234:8080/api/auth/send-otp', { // Production URL
       // Create AbortController for timeout
       const saveController = new AbortController();
       const saveTimeoutId = setTimeout(() => saveController.abort(), 30000); // 30 second timeout
       
-      const saveResponse = await fetch('http://178.128.194.234:8080/api/auth/send-otp', { // Production server URL
+      const saveResponse = await fetch('http://178.128.194.234:8080/api/auth/send-otp', { // Production URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -386,22 +419,15 @@ export default function SignupScreen() {
       // Store OTP for local verification
       setGeneratedOTP(otp);
       
-      // Then send SMS directly via Dreams SMS with the server's OTP
-      const smsResult = await sendSMSDirectly(fullPhone, otp);
+      // Server handles SMS sending, just show OTP modal
+      console.log('✅ OTP sent successfully via server!');
+      console.log('🔢 OTP Code:', otp);
       
-      if (smsResult.success) {
-        console.log('✅ OTP sent successfully via Dreams SMS!');
-        console.log('🔢 OTP Code:', otp);
-        console.log('📨 Message ID:', smsResult.messageId);
-        
-        // Clear previous OTP and show modal
-        setOtp(['', '', '', '', '', '']);
-        setErrors(prev => ({ ...prev, otp: '' })); // Clear OTP errors
-        setShowOTPModal(true);
-        console.log('OTP modal should be visible now');
-      } else {
-        throw new Error(smsResult.error || 'Failed to send SMS');
-      }
+      // Clear previous OTP and show modal
+      setOtp(['', '', '', '', '', '']);
+      setErrors(prev => ({ ...prev, otp: '' })); // Clear OTP errors
+      setShowOTPModal(true);
+      console.log('OTP modal should be visible now');
       
     } catch (error: any) {
       console.error('Signup error:', error);

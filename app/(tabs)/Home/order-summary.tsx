@@ -25,6 +25,15 @@ export default function OrderSummaryScreen() {
   const [servicesLoaded, setServicesLoaded] = useState(false);
   const [notesKey, setNotesKey] = useState(0);
 
+  // Disable swipe gesture navigation
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        // Cleanup when screen loses focus
+      };
+    }, [])
+  );
+
   // Load services on component mount
   useEffect(() => {
     const loadServices = async () => {
@@ -198,7 +207,17 @@ export default function OrderSummaryScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        bounces={false}
+        onScrollBeginDrag={(e) => {
+          // Prevent horizontal swipe gestures
+          e.nativeEvent.contentOffset.x = 0;
+        }}
+        onTouchStart={(e) => {
+          // Disable swipe gestures
+          e.stopPropagation();
+        }}>
         <View style={styles.detailsContainer}>
           {/* Service Card */}
           <View style={styles.serviceCard}>

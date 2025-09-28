@@ -1,19 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { dreamsSmsService, otpMessageTemplate } from '../../config/dreamsSms';
+import DreamsSmsService from '../../services/dreamsSms';
+
+// Dreams SMS Configuration
+const dreamsSmsConfig = {
+  username: 'Nwahtech',
+  secretKey: 'd9877b42793f4a0adc2104000f38e0216f08e1f6cc342a3e381fd0f5509d8e37',
+  sender: 'nwahtech',
+};
+
+// Initialize Dreams SMS service
+const dreamsSmsService = new DreamsSmsService(dreamsSmsConfig);
+
+// OTP message template
+const otpMessageTemplate = (otp: string) => 
+  `رمز التحقق الخاص بك هو: ${otp}\n\nلا تشارك هذا الرمز مع أي شخص.\n\nمع تحيات فريق مشتل`;
 
 // List of possible API URLs to try
 const POSSIBLE_URLS = [
-     'http://178.128.194.234:8080/api',
-     'http://mashtl.com:8080/api',
-  // 'http://localhost:8080/api',       // Local development (port 8080)
-  // 'http://127.0.0.1:8080/api',       // Local development alternative
-  // 'http://10.0.2.2:8080/api',        // Android Emulator
-  // 'http://192.168.1.100:8080/api',   // Common local network IP
-  // 'http://192.168.0.100:8080/api',   // Alternative local network IP
+  'http://178.128.194.234:8080/api', // Production server (primary)
+  'http://178.128.194.234:8080/api',     // Local development server (fallback)      // Local development server (fallback for simulator)
 ];
 
-let API_BASE_URL = POSSIBLE_URLS[0]; // Start with production server
+let API_BASE_URL = POSSIBLE_URLS[0]; // Start with your local IP address
 
 // Function to test which URL works
 const testAPIConnection = async () => {
@@ -258,6 +267,13 @@ export const getUserData = async () => {
     // Check for essential fields
     if (!parsedData.token) {
       console.error('❌ User data missing token, clearing invalid data');
+      await AsyncStorage.removeItem('user_data');
+      return null;
+    }
+    
+    // Check if token looks valid (not just "token-..." prefix)
+    if (parsedData.token.startsWith('token-') && parsedData.token.length < 20) {
+      console.error('❌ User data has malformed token, clearing invalid data');
       await AsyncStorage.removeItem('user_data');
       return null;
     }
