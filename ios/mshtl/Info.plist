@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.3.1</string>
+	<string>1.3.3</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -39,7 +39,7 @@
       </dict>
     </array>
 	<key>CFBundleVersion</key>
-	<string>1.3.1</string>
+	<string>1.3.3</string>
     <key>GMSApiKey</key>
     <string>AIzaSyAymUZ38EmOE01tkStI0Rtm0YeYOIU5kYw</string>
     <key>ITSAppUsesNonExemptEncryption</key>
@@ -107,23 +107,29 @@
       </dict>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your camera</string>
+    <string>يحتاج التطبيق إذن الوصول للكاميرا لالتقاط صور المنتجات الزراعية والمحاصيل التي تريد طلب خدمات لها. سيتم استخدام الصور لتحديد نوع المحصول وتقديم الخدمات المناسبة</string>
     <key>NSContactsUsageDescription</key>
     <string>نحتاج إذن الوصول للاتصالات لإرسال رموز التحقق عبر الرسائل النصية</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة وعرض المزارعين القريبين منك. على سبيل المثال: عندما تبحث عن خدمات زراعية في منطقتك، سنعرض لك أقرب المزارعين المتاحين</string>
+    <string>يستخدم التطبيق موقعك لعرض المزارعين القريبين منك وتسهيل طلب الخدمات الزراعية. يمكنك تحديد موقعك يدوياً إذا لم ترد مشاركة الموقع</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <string>يحتاج التطبيق إذن الوصول للموقع لتحديد المزارعين القريبين منك وتسهيل طلب الخدمات الزراعية. يمكنك تحديد موقعك يدوياً إذا لم ترد مشاركة الموقع</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>نحتاج إذن الوصول للموقع لتحديد موقعك على الخريطة وعرض المزارعين القريبين منك. على سبيل المثال: عندما تبحث عن خدمات زراعية في منطقتك، سنعرض لك أقرب المزارعين المتاحين</string>
+    <string>يستخدم التطبيق موقعك لعرض المزارعين القريبين منك وتسهيل طلب الخدمات الزراعية. يمكنك تحديد موقعك يدوياً إذا لم ترد مشاركة الموقع</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <string>يحتاج التطبيق إذن الوصول للميكروفون لتسجيل الرسائل الصوتية مع المزارعين وتسهيل التواصل أثناء طلب الخدمات الزراعية</string>
     <key>NSPhoneNumberUsageDescription</key>
     <string>نحتاج إذن الوصول لرقم الهاتف للتحقق من هويتك</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to save photos</string>
+    <string>يحتاج التطبيق إذن حفظ الصور في مكتبة الصور لحفظ صور المنتجات الزراعية والمحاصيل التي تم التقاطها لتقديم الخدمات المناسبة</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your photos</string>
+    <string>يحتاج التطبيق إذن الوصول لمكتبة الصور لاختيار صور المنتجات الزراعية والمحاصيل الموجودة مسبقاً لتقديم الخدمات المناسبة</string>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>يحتاج التطبيق إذن التتبع لتحسين تجربة المستخدم وتقديم خدمات مخصصة. سيتم استخدام البيانات لتطوير الخدمات الزراعية وتسهيل التواصل مع المزارعين</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>يحتاج التطبيق إذن الوصول لمجلد المستندات لرفع الملفات والمستندات المتعلقة بالخدمات الزراعية مثل الفواتير والشهادات الزراعية</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>يحتاج التطبيق إذن الوصول لمجلد التحميلات لتحميل الملفات والمستندات المتعلقة بالخدمات الزراعية مثل الفواتير والشهادات</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

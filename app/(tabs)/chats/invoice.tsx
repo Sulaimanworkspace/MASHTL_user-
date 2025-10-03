@@ -11,8 +11,10 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getInvoiceData, getUserData } from '../../services/api';
 import CustomModal from '../../components/CustomModal';
 import pusherService from '../../services/pusher';
@@ -31,6 +33,8 @@ interface InvoiceData {
 
 const InvoiceScreen: React.FC = () => {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const params = useLocalSearchParams();
   const orderId = params.orderId as string;
   
@@ -218,7 +222,7 @@ const InvoiceScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
       
       {/* Header */}
@@ -433,7 +437,7 @@ const InvoiceScreen: React.FC = () => {
                  message={modalMessage}
                  onClose={() => setShowModal(false)}
                />
-    </View>
+    </Container>
   );
 };
 
@@ -445,7 +449,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar, Linking, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -33,6 +34,8 @@ function formatArabicDate(dateString: string) {
 
 export default function TrackOrderScreen() {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const params = useLocalSearchParams();
   const orderId = params.orderId as string;
   const farmerName = params.farmerName as string;
@@ -84,7 +87,7 @@ export default function TrackOrderScreen() {
   }, [orderId]);
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
       {/* Header */}
       <View style={styles.navBar}>
@@ -231,7 +234,7 @@ export default function TrackOrderScreen() {
       >
         <Text style={styles.notificationModalButtonText}>الاتصال بالمزارع</Text>
       </TouchableOpacity>
-    </View>
+    </Container>
   );
 }
 
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

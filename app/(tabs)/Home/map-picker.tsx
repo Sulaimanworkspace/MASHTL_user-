@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -27,6 +28,8 @@ export const triggerLocationRefresh = () => {
 
 export default function MapPicker() {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const webViewRef = useRef<WebView>(null);
   const [selectedLocation, setSelectedLocation] = useState({
     latitude: 24.7136,
@@ -481,7 +484,7 @@ export default function MapPicker() {
   };
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#2E8B57" />
       
       {/* Header */}
@@ -565,7 +568,7 @@ export default function MapPicker() {
           </View>
         </View>
       )}
-    </View>
+    </Container>
   );
 }
 

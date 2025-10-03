@@ -2,13 +2,16 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, Alert } from 'react-native';
+import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, Alert, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../_colors';
 import { getUserData, getServices, refreshUserDataFromServer } from '../../services/api';
 import LocationPickerModal from '../../components/LocationPickerModal';
 
 export default function OrderSummaryScreen() {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const { projectName, projectType, image, description } = useLocalSearchParams();
   const imageUrl = Array.isArray(image) ? image[0] : image;
   const [showWarning, setShowWarning] = useState(true);
@@ -156,7 +159,7 @@ export default function OrderSummaryScreen() {
   const handleAcknowledge = () => setShowWarning(false);
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       {/* Warning Modal */}
       <Modal
         visible={showWarning}
@@ -284,7 +287,7 @@ export default function OrderSummaryScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </Container>
   );
 }
 
@@ -294,7 +297,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

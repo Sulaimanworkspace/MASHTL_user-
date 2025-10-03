@@ -10,12 +10,16 @@ import {
   View,
   ActivityIndicator,
   ScrollView,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getUserWallet, getUserData } from '../../services/api';
 
 const Wallet: React.FC = () => {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const [walletData, setWalletData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -67,7 +71,7 @@ const Wallet: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
 
       {/* Green Header Navigation Bar */}
@@ -178,7 +182,7 @@ const Wallet: React.FC = () => {
           <Text style={styles.addButtonText}>اضافة رصيد للمحفظة</Text>
         </TouchableOpacity>
       </View> */}
-    </View>
+    </Container>
   );
 };
 
@@ -188,7 +192,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 10,
     position: 'relative',

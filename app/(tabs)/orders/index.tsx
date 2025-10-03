@@ -14,8 +14,10 @@ import {
   RefreshControl,
   Modal,
   Alert,
-  Linking
+  Linking,
+  Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getUserData, getUserServiceOrders, getServices } from '../../services/api';
 import pusherService from '../../services/pusher';
 import { useSpinner } from '../../contexts/SpinnerContext';
@@ -69,6 +71,8 @@ interface ServiceData {
 const User17: React.FC = () => {
   const router = useRouter();
   const { showSpinner, hideSpinner } = useSpinner();
+  const Container = View;
+  const containerProps = {};
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
@@ -307,7 +311,7 @@ const User17: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
 
       {/* Navigation Bar */}
@@ -554,7 +558,7 @@ const User17: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </Container>
   );
 };
 
@@ -566,7 +570,7 @@ const styles = StyleSheet.create({
 
   // Navigation Bar Styles
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

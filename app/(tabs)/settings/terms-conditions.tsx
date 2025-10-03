@@ -10,16 +10,20 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
 const TermsConditions: React.FC = () => {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
 
       {/* Green Header Navigation Bar */}
@@ -200,7 +204,7 @@ const TermsConditions: React.FC = () => {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </Container>
   );
 };
 
@@ -210,7 +214,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

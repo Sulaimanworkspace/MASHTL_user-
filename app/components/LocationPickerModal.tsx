@@ -10,7 +10,9 @@ import {
   Dimensions,
   TextInput,
   ScrollView,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
@@ -41,6 +43,8 @@ export default function LocationPickerModal({
   onLocationSaved 
 }: LocationPickerModalProps) {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const [saving, setSaving] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
 
@@ -133,7 +137,7 @@ export default function LocationPickerModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <Container style={styles.container} {...containerProps}>
         {/* Header */}
         <View style={styles.header}>
           <LinearGradient
@@ -205,7 +209,7 @@ export default function LocationPickerModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </Container>
     </Modal>
   );
 }
@@ -227,7 +231,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingBottom: 20,
   },
   headerSpacer: {

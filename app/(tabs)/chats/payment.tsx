@@ -9,7 +9,9 @@ import {
   StatusBar,
   Dimensions,
   ScrollView,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,6 +44,8 @@ interface PaymentScreenProps {}
 
 const PaymentScreen: React.FC<PaymentScreenProps> = () => {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const params = useLocalSearchParams();
   const orderId = params.orderId as string;
   
@@ -76,26 +80,26 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
     setError(null);
   }, []);
 
-  useEffect(() => {
-    const initializeMyFatoorah = async () => {
-      try {
-        console.log('🔧 Initializing MyFatoorah SDK...');
-        await MFSDK.init(
-          MYFATOORAH_CONFIG.apiKey,
-          MYFATOORAH_CONFIG.country,
-          MYFATOORAH_CONFIG.isLive ? MFEnvironment.LIVE : MFEnvironment.TEST
-        );
-        console.log('✅ MyFatoorah SDK initialized successfully');
-        
-        // Fetch invoice data
-        await fetchInvoiceData();
-      } catch (error) {
-        console.error('❌ Error initializing MyFatoorah SDK:', error);
-        setError('فشل في تهيئة نظام الدفع');
-        setLoading(false);
-      }
-    };
+  const initializeMyFatoorah = async () => {
+    try {
+      console.log('🔧 Initializing MyFatoorah SDK...');
+      await MFSDK.init(
+        MYFATOORAH_CONFIG.apiKey,
+        MYFATOORAH_CONFIG.country,
+        MYFATOORAH_CONFIG.isLive ? MFEnvironment.LIVE : MFEnvironment.TEST
+      );
+      console.log('✅ MyFatoorah SDK initialized successfully');
+      
+      // Fetch invoice data
+      await fetchInvoiceData();
+    } catch (error) {
+      console.error('❌ Error initializing MyFatoorah SDK:', error);
+      setError('فشل في تهيئة نظام الدفع');
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     initializeMyFatoorah();
   }, []);
 
@@ -110,6 +114,12 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
     const loadCardViewWhenReady = async () => {
       if (cardViewReady && cardPaymentView.current && sessionResponse && !loading) {
         console.log('🎯 Card view became ready, loading now...');
+        
+        // Android-specific: Additional delay to ensure view is fully ready
+        if (Platform.OS === 'android') {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         try {
           await loadCardView(sessionResponse);
         } catch (error) {
@@ -205,18 +215,25 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
       console.log('💳 Loading card view...');
       console.log('🔍 Card payment view ref:', cardPaymentView.current);
       
-      // Wait a bit for the ref to be properly set
+      // Android-specific: Wait longer for the ref to be properly set
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = Platform.OS === 'android' ? 20 : 10; // More attempts on Android
       
       while (!cardPaymentView.current && attempts < maxAttempts) {
         console.log(`⏳ Waiting for card view ref... Attempt ${attempts + 1}/${maxAttempts}`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, Platform.OS === 'android' ? 1000 : 500));
         attempts++;
       }
       
       if (cardPaymentView.current) {
         console.log('✅ Card payment view ref found, loading...');
+        
+        // Android-specific: Additional initialization check
+        if (Platform.OS === 'android') {
+          // Wait a bit more for Android to ensure the view is fully ready
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
         await cardPaymentView.current.load(
           initiateSessionResponse,
           (bin: string) => console.log('💳 BIN detected:', bin)
@@ -245,7 +262,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
       processColor('#f5f5f5'), // Background color - light gray
       0, // Shadow radius - no shadow
       0, // Shadow offset - no shadow
-      new MFBoxShadow(0, 0, 0, 0, processColor('transparent')), // No shadow
+      Platform.OS === 'android' ? undefined : new MFBoxShadow(0, 0, 0, 0, processColor('#00000000')), // Android: no shadow, iOS: shadow
       new MFCardViewPlaceHolder('اسم حامل البطاقة', 'رقم البطاقة', 'MM / YY', 'CVV')
     );
 
@@ -261,7 +278,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
     const cardViewError = new MFCardViewError(
       processColor('#f44336'), // Error color - red
       12, // Font size
-      new MFBoxShadow(0, 0, 0, 0, processColor('transparent')) // No shadow
+      Platform.OS === 'android' ? undefined : new MFBoxShadow(0, 0, 0, 0, processColor('#00000000')) // Android: no shadow, iOS: shadow
     );
 
     const cardViewStyle = new MFCardViewStyle(
@@ -433,7 +450,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <Container style={styles.container} {...containerProps}>
         <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
         
         {/* Header */}
@@ -464,13 +481,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={styles.loadingText}>جاري تحضير نموذج الدفع...</Text>
         </View>
-      </View>
+      </Container>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
+      <Container style={styles.container} {...containerProps}>
         <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
         
         {/* Header */}
@@ -511,12 +528,12 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
             <Text style={styles.retryButtonText}>إعادة المحاولة</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Container>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
       
       {/* Header */}
@@ -616,7 +633,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = () => {
             )}
         </TouchableOpacity>
       </View>
-    </View>
+    </Container>
   );
 };
 
@@ -626,7 +643,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

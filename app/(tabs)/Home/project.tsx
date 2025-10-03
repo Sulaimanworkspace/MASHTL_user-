@@ -2,7 +2,8 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback, useRef } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getUserData } from '../../services/api';
 import Colors from '../../_colors';
 import { useSpinner } from '../../contexts/SpinnerContext';
@@ -10,6 +11,8 @@ import { useSpinner } from '../../contexts/SpinnerContext';
 export default function ProjectScreen() {
   const router = useRouter();
   const { showSpinner, hideSpinner } = useSpinner();
+  const Container = View;
+  const containerProps = {};
   const { id, name, image, description } = useLocalSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -38,7 +41,7 @@ export default function ProjectScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       {/* Green Header Navigation Bar */}
       <View style={styles.navBar}>
         <LinearGradient
@@ -146,7 +149,7 @@ export default function ProjectScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </Container>
   );
 }
 
@@ -156,7 +159,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

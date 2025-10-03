@@ -2,12 +2,15 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getUserData, getServices } from '../../services/api';
 import { useSpinner } from '../../contexts/SpinnerContext';
 
 export default function ServiceDetailsScreen() {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const { id, name, image, description } = useLocalSearchParams();
   const { showSpinner, hideSpinner } = useSpinner();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -133,7 +136,7 @@ export default function ServiceDetailsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       {/* Green Header Navigation Bar */}
       <View style={styles.navBar}>
         <LinearGradient
@@ -230,7 +233,7 @@ export default function ServiceDetailsScreen() {
           </View>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </Container>
   );
 }
 
@@ -240,7 +243,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, Modal, TouchableWithoutFeedback, Dimensions, Keyboard } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as MediaLibrary from 'expo-media-library';
@@ -40,6 +41,8 @@ interface ChatParams {
 
 const MessageScreen: React.FC = () => {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const params = useLocalSearchParams();
   const orderId = params.orderId as string;
   const farmerId = params.farmerId as string;
@@ -534,7 +537,7 @@ const MessageScreen: React.FC = () => {
 
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
       {/* Header */}
       <View style={styles.navBar}>
@@ -842,7 +845,7 @@ const MessageScreen: React.FC = () => {
         message={modalMessage}
         onClose={() => setShowModal(false)}
       />
-    </View>
+    </Container>
   );
 };
 
@@ -855,7 +858,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

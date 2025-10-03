@@ -12,6 +12,8 @@ import {
     View,
     Animated
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserData, getNotificationCount, getServices, refreshUserDataFromServer } from '../../services/api';
@@ -110,6 +112,7 @@ interface ServiceData {
 const User4: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const [userName, setUserName] = useState('بك في مشتل');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userLocation, setUserLocation] = useState('اختر موقعك');
@@ -541,9 +544,16 @@ const User4: React.FC = () => {
     }
   };
 
+  const Container = View;
+  const containerProps = {};
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
+    <Container style={styles.container} {...containerProps}>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor="#4CAF50" 
+        translucent={false}
+      />
 
       {/* Green Header Navigation Bar */}
       <View style={styles.navBar}>
@@ -732,7 +742,7 @@ const User4: React.FC = () => {
         onClose={() => setLocationModalVisible(false)}
         onLocationSaved={handleLocationSaved}
       />
-    </View>
+    </Container>
   );
 };
 
@@ -755,7 +765,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 10 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

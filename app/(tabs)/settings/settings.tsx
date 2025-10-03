@@ -12,7 +12,9 @@ import {
   Modal,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { getUserData, updateUserProfile } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,6 +23,8 @@ const { width } = Dimensions.get('window');
 
 const Settings: React.FC = () => {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -158,7 +162,7 @@ const Settings: React.FC = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <Container style={styles.container} {...containerProps}>
         <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
         <View style={styles.navBar}>
           <LinearGradient
@@ -184,12 +188,12 @@ const Settings: React.FC = () => {
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={styles.loadingText}>جاري التحميل...</Text>
         </View>
-      </View>
+      </Container>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
 
       {/* Green Header Navigation Bar */}
@@ -371,7 +375,7 @@ const Settings: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </Container>
   );
 };
 
@@ -381,7 +385,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

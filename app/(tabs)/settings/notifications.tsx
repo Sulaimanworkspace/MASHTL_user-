@@ -2,7 +2,8 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Alert, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../_colors';
 import { getUserData, getUserNotifications, deleteNotification, markNotificationAsRead } from '../../services/api';
 
@@ -17,6 +18,8 @@ interface Notification {
 
 export default function SettingsNotificationsScreen() {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>('');
@@ -134,7 +137,7 @@ export default function SettingsNotificationsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       {/* Green Header Navigation Bar */}
       <View style={styles.navBar}>
         <LinearGradient
@@ -171,7 +174,7 @@ export default function SettingsNotificationsScreen() {
           </View>
         }
       />
-    </View>
+    </Container>
   );
 }
 
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

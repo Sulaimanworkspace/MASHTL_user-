@@ -10,7 +10,9 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getUserData, clearUserData } from '../../services/api';
 import pusherService from '../../services/pusher';
 import { useSpinner } from '../../contexts/SpinnerContext';
@@ -70,6 +72,8 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
 const User19: React.FC = () => {
   const router = useRouter();
   const { showSpinner, hideSpinner } = useSpinner();
+  const Container = View;
+  const containerProps = {};
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -153,8 +157,9 @@ const User19: React.FC = () => {
   };
 
   return (
-    <View 
+    <Container 
       style={styles.container}
+      {...containerProps}
       onTouchStart={(e) => {
         // Disable swipe gestures
         e.stopPropagation();
@@ -278,7 +283,7 @@ const User19: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </Container>
   );
 };
 
@@ -290,7 +295,7 @@ const styles = StyleSheet.create({
 
   // Green Header Navigation Bar Styles
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

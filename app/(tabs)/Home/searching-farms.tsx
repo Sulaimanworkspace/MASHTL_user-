@@ -2,13 +2,16 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
-import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { createServiceOrder, getUserData, cancelServiceOrder, getUserNotifications, markNotificationAsRead, refreshUserDataFromServer } from '../../services/api';
 import pusherService from '../../services/pusher';
 import { useSpinner } from '../../contexts/SpinnerContext';
 
 export default function SearchingFarmsScreen() {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const params = useLocalSearchParams();
   const { showSpinner, hideSpinner } = useSpinner();
   const [showModal, setShowModal] = useState(false);
@@ -325,7 +328,7 @@ export default function SearchingFarmsScreen() {
   }, [createdOrderId]); // Re-run when order ID changes
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
       {/* Green Header */}
       <View style={styles.navBar}>
@@ -492,7 +495,7 @@ export default function SearchingFarmsScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </Container>
   );
 }
 
@@ -502,7 +505,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

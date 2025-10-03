@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 export default function Test() {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <Text style={styles.title}>Test Page</Text>
       <Text style={styles.subtitle}>If you can see this, routing works!</Text>
       
@@ -16,7 +19,7 @@ export default function Test() {
       >
         <Text style={styles.buttonText}>Go Back</Text>
       </TouchableOpacity>
-    </View>
+    </Container>
   );
 }
 

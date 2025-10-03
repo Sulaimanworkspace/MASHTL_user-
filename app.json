@@ -1,26 +1,35 @@
 {
-  "expo": {
-    "name": "مشتل",
-    "slug": "mashtl",
-    "version": "1.3.1",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "userapp",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+        "expo": {
+          "name": "Mashtl",
+          "slug": "mashtl",
+          "version": "1.4.4",
+          "orientation": "portrait",
+          "icon": "./android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+          "scheme": "userapp",
+          "userInterfaceStyle": "automatic",
+          "newArchEnabled": true,
+          "layoutDirection": "rtl",
+          "supportsRtl": true,
     "splash": {
       "backgroundColor": "#2E8B57",
       "resizeMode": "contain"
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "1.3.1",
+        "buildNumber": "1.4.4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "يستخدم التطبيق موقعك لعرض المزارعين القريبين منك وتسهيل طلب الخدمات الزراعية. يمكنك تحديد موقعك يدوياً إذا لم ترد مشاركة الموقع",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "يستخدم التطبيق موقعك لعرض المزارعين القريبين منك وتسهيل طلب الخدمات الزراعية. يمكنك تحديد موقعك يدوياً إذا لم ترد مشاركة الموقع",
-        "NSContactsUsageDescription": "نحتاج إذن الوصول للاتصالات لإرسال رموز التحقق عبر الرسائل النصية",
-        "NSPhoneNumberUsageDescription": "نحتاج إذن الوصول لرقم الهاتف للتحقق من هويتك",
+        "NSLocationWhenInUseUsageDescription": "يحتاج التطبيق إذن الوصول للموقع لتحديد المزارعين القريبين منك وتسهيل طلب الخدمات الزراعية. يمكنك تحديد موقعك يدوياً إذا لم ترد مشاركة الموقع",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "يحتاج التطبيق إذن الوصول للموقع لتحديد المزارعين القريبين منك وتسهيل طلب الخدمات الزراعية. يمكنك تحديد موقعك يدوياً إذا لم ترد مشاركة الموقع",
+        "NSContactsUsageDescription": "يحتاج التطبيق إذن الوصول للاتصالات لإرسال رموز التحقق عبر الرسائل النصية",
+        "NSPhoneNumberUsageDescription": "يحتاج التطبيق إذن الوصول لرقم الهاتف للتحقق من هويتك",
+        "NSCameraUsageDescription": "يحتاج التطبيق إذن الوصول للكاميرا لالتقاط صور المنتجات الزراعية والمحاصيل التي تريد طلب خدمات لها. سيتم استخدام الصور لتحديد نوع المحصول وتقديم الخدمات المناسبة",
+        "NSMicrophoneUsageDescription": "يحتاج التطبيق إذن الوصول للميكروفون لتسجيل الرسائل الصوتية مع المزارعين وتسهيل التواصل أثناء طلب الخدمات الزراعية",
+        "NSPhotoLibraryUsageDescription": "يحتاج التطبيق إذن الوصول لمكتبة الصور لاختيار صور المنتجات الزراعية والمحاصيل الموجودة مسبقاً لتقديم الخدمات المناسبة",
+        "NSPhotoLibraryAddUsageDescription": "يحتاج التطبيق إذن حفظ الصور في مكتبة الصور لحفظ صور المنتجات الزراعية والمحاصيل التي تم التقاطها لتقديم الخدمات المناسبة",
+        "NSUserTrackingUsageDescription": "يحتاج التطبيق إذن التتبع لتحسين تجربة المستخدم وتقديم خدمات مخصصة. سيتم استخدام البيانات لتطوير الخدمات الزراعية وتسهيل التواصل مع المزارعين",
+        "NSDocumentsFolderUsageDescription": "يحتاج التطبيق إذن الوصول لمجلد المستندات لرفع الملفات والمستندات المتعلقة بالخدمات الزراعية مثل الفواتير والشهادات الزراعية",
+        "NSDownloadsFolderUsageDescription": "يحتاج التطبيق إذن الوصول لمجلد التحميلات لتحميل الملفات والمستندات المتعلقة بالخدمات الزراعية مثل الفواتير والشهادات",
         "UIBackgroundModes": ["remote-notification"],
         "CFBundleDisplayName": "مشتل",
         "NSAppTransportSecurity": {
@@ -58,29 +67,31 @@
       "config": {
         "googleMapsApiKey": "AIzaSyAymUZ38EmOE01tkStI0Rtm0YeYOIU5kYw"
       },
-      "bundleIdentifier": "com.mashtlapp.user",
+      "bundleIdentifier": "com.mashtlapp.userx",
       "appleTeamId": "GQ245B6F47",
       "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
         "aps-environment": "development"
       }
     },
-    "android": {
-      "icon": "./assets/images/icon.png",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "minSdkVersion": 26,
+          "android": {
+            "icon": "./android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+            "edgeToEdgeEnabled": true,
+            "minSdkVersion": 26,
+            "userInterfaceStyle": "light",
+            "layoutDirection": "rtl",
+            "supportsRtl": true,
+            "navigationBar": {
+              "visible": "leanback"
+            },
+            "statusBar": {
+              "style": "light",
+              "backgroundColor": "#2E8B57"
+            },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
         "SEND_SMS",
-        "RECEIVE_SMS",
-        "READ_SMS",
         "READ_PHONE_STATE"
       ],
       "config": {
@@ -88,19 +99,19 @@
           "apiKey": "AIzaSyDemoKeyForDevelopment123456789"
         }
       },
-      "package": "com.mashtlapp.user",
+      "package": "com.mashtlapp.userx",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./android/app/src/main/res/mipmap-hdpi/ic_launcher.png"
     },
     "plugins": [
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
+          "icon": "./android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
           "color": "#2E8B57"
         }
       ],

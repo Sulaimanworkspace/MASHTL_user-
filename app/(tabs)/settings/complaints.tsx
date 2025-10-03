@@ -12,8 +12,10 @@ import {
   TextInput,
   Alert,
   Modal,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { createComplaint, getUserComplaints } from '../../services/api';
 import { pusherService } from '../../services/pusher';
 import notificationService, { sendNotificationFromPusher } from '../../services/notifications';
@@ -35,6 +37,8 @@ interface Complaint {
 
 const Complaints: React.FC = () => {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
@@ -238,7 +242,7 @@ const Complaints: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
 
       {/* Green Header Navigation Bar */}
@@ -413,7 +417,7 @@ const Complaints: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </Container>
   );
 };
 
@@ -423,7 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

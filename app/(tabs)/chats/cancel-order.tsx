@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   StatusBar,
   SafeAreaView,
+  Platform,
 } from 'react-native';
+import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -14,6 +16,8 @@ import { cancelServiceOrder } from '../../services/api';
 
 const CancelOrderScreen: React.FC = () => {
   const router = useRouter();
+  const Container = Platform.OS === 'android' ? RNSafeAreaView : View;
+  const containerProps = {};
   const params = useLocalSearchParams();
   const orderId = params.orderId as string;
   
@@ -44,7 +48,7 @@ const CancelOrderScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
       {/* Green Header Navigation Bar (copied from service-details) */}
       <View style={styles.navBar}>
@@ -108,7 +112,7 @@ const CancelOrderScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Container>
   );
 };
 
@@ -118,7 +122,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

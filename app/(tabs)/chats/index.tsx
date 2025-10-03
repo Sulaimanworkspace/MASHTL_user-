@@ -2,7 +2,8 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, RefreshControl, Animated } from 'react-native';
+import { FlatList, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, RefreshControl, Animated, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserData, getUserServiceOrders, getUnreadMessageCount } from '../../services/api';
 import pusherService from '../../services/pusher';
@@ -26,6 +27,8 @@ interface ChatOrder {
 
 const ChatInboxScreen: React.FC = () => {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [chatOrders, setChatOrders] = useState<ChatOrder[]>([]);
@@ -217,7 +220,7 @@ const ChatInboxScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
       {/* Header */}
       <View style={styles.navBar}>
@@ -264,7 +267,7 @@ const ChatInboxScreen: React.FC = () => {
           </View>
         }
       />
-    </View>
+    </Container>
   );
 };
 
@@ -274,7 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',

@@ -2,12 +2,15 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback, useRef } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { createProjectRequest, getUserData, refreshUserDataFromServer } from '../../services/api';
 import { useSpinner } from '../../contexts/SpinnerContext';
 
 export default function ProjectFormScreen() {
   const router = useRouter();
+  const Container = View;
+  const containerProps = {};
   const { showSpinner, hideSpinner } = useSpinner();
   const { name, image, description } = useLocalSearchParams();
   const [form, setForm] = useState({
@@ -148,7 +151,7 @@ export default function ProjectFormScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <Container style={styles.container} {...containerProps}>
       {/* Header */}
       <View style={styles.navBar}>
         <LinearGradient
@@ -333,7 +336,7 @@ export default function ProjectFormScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </Container>
   );
 }
 
@@ -343,7 +346,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   navBar: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'android' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     position: 'relative',
